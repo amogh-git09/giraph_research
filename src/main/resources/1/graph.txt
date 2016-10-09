@@ -1,0 +1,6 @@
+John 22 Peter 10
+Mark 40 John 23 Anne 11
+Jack 19 Mark 1 Anne 9
+Julia 29 Mark 32 Natalie 4
+Anne 31 Julia 20 Peter 35
+Natalie 45 Peter 2 Anne 50 John 10

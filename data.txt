@@ -1,0 +1,18 @@
+Julia:id -> Mark:id [label=0.0 ];
+Julia:id -> Natalie:id [label=0.0 ];
+"Julia" [label="<id> Julia|0.0",shape=record,fillcolor="blue:orange"];
+Anne:id -> Peter:id [label=0.0 ];
+Anne:id -> Julia:id [label=0.0 ];
+"Anne" [label="<id> Anne|0.0",shape=record,fillcolor="blue:orange"];
+Jack:id -> Mark:id [label=0.0 ];
+Jack:id -> Anne:id [label=0.0 ];
+"Jack" [label="<id> Jack|0.0",shape=record,fillcolor="blue:orange"];
+Natalie:id -> John:id [label=0.0 ];
+Natalie:id -> Peter:id [label=0.0 ];
+Natalie:id -> Anne:id [label=0.0 ];
+"Natalie" [label="<id> Natalie|0.0",shape=record,fillcolor="blue:orange"];
+Mark:id -> John:id [label=0.0 ];
+Mark:id -> Anne:id [label=0.0 ];
+"Mark" [label="<id> Mark|0.0",shape=record,fillcolor="blue:orange"];
+John:id -> Peter:id [label=0.0 ];
+"John" [label="<id> John|0.0",shape=record,fillcolor="blue:orange"];
