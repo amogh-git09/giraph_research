@@ -27,6 +27,11 @@ import java.util.List;
  */
 public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, DoubleWritable, DoubleWritable> {
     GiraphTextInputFormat textInputFormat = new GiraphTextInputFormat();
+    static final int OUTPUT_LAYER = -1;
+    static final int INPUT_LAYER = 1;
+    private int networkNum = 1;
+    private int vertexNum = 1;
+    private int layerNum = 1;
 
     @Override
     public VertexReader<Text, DoubleWritable, DoubleWritable> createVertexReader(InputSplit split, TaskAttemptContext context) throws IOException {
@@ -46,11 +51,6 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Doub
     public class NeuralNetworkVertexReader extends VertexReader<Text, DoubleWritable, DoubleWritable> {
         private RecordReader<LongWritable, Text> lineRecordReader;
         private TaskAttemptContext context;
-        private static final int OUTPUT_LAYER = -1;
-        private static final int INPUT_LAYER = 1;
-        private int networkNum = 1;
-        private int vertexNum = 1;
-        private int layerNum = 1;
 
         @Override
         public void initialize(InputSplit inputSplit, TaskAttemptContext context) throws IOException, InterruptedException {
