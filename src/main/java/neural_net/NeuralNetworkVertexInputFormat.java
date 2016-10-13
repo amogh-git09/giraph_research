@@ -46,8 +46,11 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Doub
     public class NeuralNetworkVertexReader extends VertexReader<Text, DoubleWritable, DoubleWritable> {
         private RecordReader<LongWritable, Text> lineRecordReader;
         private TaskAttemptContext context;
+        private static final int OUTPUT_LAYER = -1;
+        private static final int INPUT_LAYER = 1;
         private int networkNum = 1;
         private int vertexNum = 1;
+        private int layerNum = 1;
 
         @Override
         public void initialize(InputSplit inputSplit, TaskAttemptContext context) throws IOException, InterruptedException {
@@ -64,25 +67,28 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Doub
         @Override
         public Vertex<Text, DoubleWritable, DoubleWritable> getCurrentVertex() throws IOException, InterruptedException {
             Text line = lineRecordReader.getCurrentValue();
+
+            while(line.toString().equals("output")) {
+                vertexNum = 1;
+                lineRecordReader.nextKeyValue();
+                line = lineRecordReader.getCurrentValue();
+                layerNum = OUTPUT_LAYER;      //output layer
+            }
+
             while (line.toString().equals("done")) {
                 networkNum++;
                 vertexNum = 1;
+                layerNum = INPUT_LAYER;
                 lineRecordReader.nextKeyValue();
                 line = lineRecordReader.getCurrentValue();
             }
             String data = line.toString();
 
             Vertex<Text, DoubleWritable, DoubleWritable> vertex = getConf().createVertex();
-            Text id = new Text(networkNum + ":" + 1 + ":" + vertexNum);
+            Text id = new Text(networkNum + ":" + layerNum + ":" + vertexNum);
             vertexNum++;
             DoubleWritable val = new DoubleWritable(Double.parseDouble(data));
 
-//            List<Edge<Text, DoubleWritable>> edges = new ArrayList<Edge<Text, DoubleWritable>>();
-//            for(int i=0; i<words.length-1; i = i+2) {
-//                Text destId = new Text(words[i]);
-//                IntWritable numMentions = new IntWritable(Integer.parseInt(words[i+1]));
-//                edges.add(EdgeFactory.create(destId, numMentions));
-//            }
             vertex.initialize(id, val);
             return vertex;
         }

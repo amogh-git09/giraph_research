@@ -17,7 +17,8 @@ public class NeuralNetworkHelloWorld extends
     public void compute(Vertex<Text, DoubleWritable, DoubleWritable> vertex,
                         Iterable<NullWritable> messages) throws IOException {
 
-        System.out.println("Hello world from: " + vertex.getId().toString());
+        System.out.print("Hello world from: " + vertex.getId());
+        System.out.println("\tvalue = " + vertex.getValue());
 
         vertex.voteToHalt();
     }
