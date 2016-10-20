@@ -32,9 +32,9 @@ public class StringDoubleHashMapAggregator implements Aggregator<Text> {
         return null;
     }
 
-    public DoubleWritable getAggregatedValue() {
-
-    }
+//    public DoubleWritable getAggregatedValue() {
+//
+//    }
 
     @Override
     public Text getAggregatedValue() {
