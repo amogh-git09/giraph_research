@@ -17,11 +17,11 @@ public class GiraphHelloWorld extends
     public void compute(Vertex<Text, IntWritable, IntWritable> vertex,
                         Iterable<NullWritable> messages) throws IOException {
 
-        if(getSuperstep() < 5) {
-            for(int i=0; i<5; i++) {
-                for(int j=0; j<6; j++) {
-                    System.out.printf("i=%d, j=%d, setting val = %d\n", i, j, i+j);
-                   TotalNumberOfEdgesMC.agg.aggregate(i, j, i+j, this);
+        if(getSuperstep() < 2) {
+            System.out.println("vertex compute");
+            for(int i=0; i<2; i++) {
+                for(int j=0; j<3; j++) {
+                    TotalNumberOfEdgesMC.agg.aggregate(i, j, i+j, this);
                 }
             }
         } else {

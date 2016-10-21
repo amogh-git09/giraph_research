@@ -1,5 +1,8 @@
 package neural_net;
 
+import org.apache.giraph.aggregators.AggregatorUsage;
+import org.apache.giraph.aggregators.matrix.dense.IntDenseMatrix;
+import org.apache.giraph.aggregators.matrix.dense.IntDenseVector;
 import org.apache.giraph.edge.Edge;
 import org.apache.giraph.edge.EdgeFactory;
 import org.apache.giraph.graph.BasicComputation;
@@ -18,12 +21,12 @@ import java.util.Random;
 public class BackwardPropagation extends
         BasicComputation<Text, DoubleWritable, DoubleWritable, Text> {
 
-    final int MAX_HIDDEN_LAYER_NUM = 3;                 // minimum value 2
-    final int HIDDEN_LAYER_NEURON_COUNT = 4;
-    final int OUTPUT_LAYER = -1;
-    final double EPSILON = 0.2;
-    final Random random = new Random();
-    HashMap<String, Double> weights = new HashMap<String, Double>();
+    static final int MAX_HIDDEN_LAYER_NUM = 3;                 // minimum value 2
+    static final int HIDDEN_LAYER_NEURON_COUNT = 4;
+    static final int OUTPUT_LAYER = -1;
+    static final double EPSILON = 0.2;
+    static final Random random = new Random();
+//    HashMap<String, Double> weights = new HashMap<String, Double>();
 
     @Override
     public void compute(Vertex<Text, DoubleWritable, DoubleWritable> vertex,
@@ -37,6 +40,14 @@ public class BackwardPropagation extends
         int neuronNum = Integer.parseInt(tokens[2]);
 
         if (getSuperstep() == 0) {
+            if(networkNum == 1) {
+                //aggregate number of hidden layers
+                aggregate(NumberOfClasses.NUMBER_OF_HIDDEN_LAYERS_ID, new IntWritable(HIDDEN_LAYER_NEURON_COUNT));
+
+                //aggregate the number of neurons in a hidden layer
+                aggregate(NumberOfClasses.HIDDEN_LAYER_NEURON_COUNT, new IntWritable(HIDDEN_LAYER_NEURON_COUNT));
+            }
+
             if (layerNum == NeuralNetworkVertexInputFormat.OUTPUT_LAYER) {
                 if (networkNum == 1) {
                     aggregate(NumberOfClasses.NUMBER_OF_CLASSES_ID, new IntWritable(1));
@@ -107,11 +118,7 @@ public class BackwardPropagation extends
             Double randWeight;
             String weightId = srcLayer + ":" + neuronNum + ":" + dstLayer + ":" + i;
 
-            if (weights.containsKey(weightId)) {
-                randWeight = weights.get(weightId);
-            } else {
-                randWeight = getRandomInRange(-EPSILON, EPSILON);
-            }
+            randWeight = getRandomInRange(-EPSILON, EPSILON);
 
             Text dstId = new Text(networkNum + ":" + dstLayer + ":" + i);
             weights.put(weightId, randWeight);
@@ -124,8 +131,12 @@ public class BackwardPropagation extends
         }
     }
 
-    private double getRandomInRange(Double min, Double max) {
-        Double rand = random.nextDouble();
-        return min + (max - min) * rand;
+    public IntDenseMatrix getMatrix(int numRows, AggregatorUsage aggUser) {
+        IntDenseMatrix matrix = new IntDenseMatrix(numRows, 1);
+        for (int i = 0; i < numRows; ++i) {
+            IntDenseVector vec = aggUser.getAggregatedValue(getRowAggregatorName(i));
+            matrix.addRow(vec);
+        }
+        return matrix;
     }
 }
