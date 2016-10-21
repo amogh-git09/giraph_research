@@ -10,25 +10,22 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
 import java.io.IOException;
-import java.util.Random;
 
 /**
  * Created by amogh-lab on 16/10/13.
  */
 public class BackwardPropagation extends
-        BasicComputation<Text, DoubleWritable, DoubleWritable, Text> {
+        BasicComputation<Text, DoubleWritable, DoubleWritable, DoubleWritable> {
 
     static final int MAX_HIDDEN_LAYER_NUM = 3;                 // minimum value 2
     static final int HIDDEN_LAYER_NEURON_COUNT = 4;
     static final int INPUT_LAYER_NEURON_COUNT = 4;
     static final int OUTPUT_LAYER_NEURON_COUNT = 1;
     static final int OUTPUT_LAYER = -1;
-    static final double EPSILON = 0.2;
-    static final Random random = new Random();
 
     @Override
     public void compute(Vertex<Text, DoubleWritable, DoubleWritable> vertex,
-                        Iterable<Text> messages) throws IOException {
+                        Iterable<DoubleWritable> messages) throws IOException {
 
         System.out.println("SS: " + getSuperstep() + "  Vertex ID: " + vertex.getId());
 
@@ -52,11 +49,14 @@ public class BackwardPropagation extends
                     generateEdgesToNextLayer(vertex, networkNum, layerNum, OUTPUT_LAYER,
                             OUTPUT_LAYER_NEURON_COUNT, neuronNum);
                 } else if(layerNum == OUTPUT_LAYER && neuronNum == 1) {
-//                    for(int i = 1; i <= numInputNeurons.get(); i++) {
-//                        Text dstId = new Text(String.format("%d:%d:%d", networkNum,
-//                                NeuralNetworkVertexInputFormat.INPUT_LAYER, i));
-//                        sendMessage(dstId, new Text(""));
-//                    }
+                    for(int i = 1; i <= INPUT_LAYER_NEURON_COUNT; i++) {
+                        Text dstId = new Text(String.format("%d:%d:%d", networkNum,
+                                NeuralNetworkVertexInputFormat.INPUT_LAYER, i));
+                        sendMessage(dstId, new DoubleWritable(0));
+                    }
+
+                    System.out.println("Setting to FORWARD PROPAGATION");
+                    aggregate(NumberOfClasses.STATE_ID, new IntWritable(NumberOfClasses.FORWARD_PROPAGATION_STATE));
                 } else {
                     generateEdgesToNextLayer(vertex, networkNum, layerNum, layerNum + 1,
                             HIDDEN_LAYER_NEURON_COUNT, neuronNum);
@@ -64,17 +64,25 @@ public class BackwardPropagation extends
                 vertex.voteToHalt();
                 break;
 
-//            case FORWARD_PROPAGATION:
-//                if(layerNum != NeuralNetworkVertexInputFormat.INPUT_LAYER) {
-//                    for(Text m : messages) {
-//                        System.out.println("message : " + m);
-//                    }
-//                }
-//
-//                if(layerNum != NeuralNetworkVertexInputFormat.OUTPUT_LAYER)
-//                    forwardProp(vertex);
-//                vertex.voteToHalt();
-//                break;
+            case NumberOfClasses.FORWARD_PROPAGATION_STATE:
+                if(layerNum != NeuralNetworkVertexInputFormat.INPUT_LAYER) {
+                    Double activation = 0d;
+
+                    for(DoubleWritable m : messages) {
+                        activation += m.get();
+                        System.out.println("message : " + m);
+                    }
+
+                    vertex.setValue(new DoubleWritable(activation));
+                    System.out.println("New activation: " + activation);
+                }
+
+                if(layerNum != NeuralNetworkVertexInputFormat.OUTPUT_LAYER)
+                    forwardProp(vertex);
+
+                aggregate(NumberOfClasses.STATE_ID, new IntWritable(NumberOfClasses.FORWARD_PROPAGATION_STATE));
+                vertex.voteToHalt();
+                break;
         }
     }
 
@@ -84,8 +92,8 @@ public class BackwardPropagation extends
             DoubleWritable weight = e.getValue();
             DoubleWritable activation = vertex.getValue();
             Double fragment = weight.get()*activation.get();
-            Text msg = new Text("" + (new DoubleWritable(fragment)));
-            sendMessage(dstId, msg);
+//            System.out.println("Sending msg: " + fragment + " to " + dstId);
+            sendMessage(dstId, new DoubleWritable(fragment));
         }
     }
 
@@ -99,7 +107,7 @@ public class BackwardPropagation extends
             Double weight = weights.get(i-1);
 
             Text dstId = new Text(networkNum + ":" + dstLayer + ":" + i);
-            sendMessage(dstId, new Text(""));                   // adds a new vertex if not existent
+            sendMessage(dstId, new DoubleWritable(0));                   // adds a new vertex if not existent
             Edge<Text, DoubleWritable> e = EdgeFactory.create(dstId, new DoubleWritable(weight));
             addEdgeRequest(vertex.getId(), e);
             System.out.println("Generated edge from " + vertex.getId() + " to " +

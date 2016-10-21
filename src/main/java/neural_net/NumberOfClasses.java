@@ -3,12 +3,11 @@ package neural_net;
 import org.apache.giraph.aggregators.IntMaxAggregator;
 import org.apache.giraph.aggregators.IntOverwriteAggregator;
 import org.apache.giraph.aggregators.IntSumAggregator;
-import org.apache.giraph.aggregators.matrix.dense.DoubleDenseMatrix;
 import org.apache.giraph.aggregators.matrix.dense.DoubleDenseVector;
 import org.apache.giraph.aggregators.matrix.dense.DoubleDenseVectorSumAggregator;
 import org.apache.giraph.master.DefaultMasterCompute;
+import org.apache.hadoop.io.IntWritable;
 
-import java.util.ArrayList;
 import java.util.Random;
 
 /**
@@ -17,6 +16,8 @@ import java.util.Random;
 public class NumberOfClasses extends DefaultMasterCompute {
 
     public static final int HIDDEN_LAYER_GENERATION_STATE = 0;
+    public static final int FORWARD_PROPAGATION_STATE = 1;
+
     public static final String WEIGHT_AGGREGATOR_PREFIX = "weightAggregator";
     public static final String STATE_ID = "StateAggregator";
     public static final String NUMBER_OF_NETWORKS_ID = "NumberOfNetworksAggregator";
@@ -25,11 +26,18 @@ public class NumberOfClasses extends DefaultMasterCompute {
 
     @Override
     public void compute() {
-        if(getSuperstep() == 0) {
-            initializeLayerWeightAggs(BackwardPropagation.MAX_HIDDEN_LAYER_NUM,
-                    BackwardPropagation.INPUT_LAYER_NEURON_COUNT,
-                    BackwardPropagation.HIDDEN_LAYER_NEURON_COUNT,
-                    BackwardPropagation.OUTPUT_LAYER_NEURON_COUNT);
+        if(getSuperstep() > 10) {
+            haltComputation();
+        }
+
+        System.out.print("\nSS: " + getSuperstep());
+        IntWritable state = getAggregatedValue(STATE_ID);
+        switch (state.get()) {
+            case HIDDEN_LAYER_GENERATION_STATE: System.out.println("  HIDDEN LAYER GENERATION STAGE");
+                break;
+            case FORWARD_PROPAGATION_STATE: System.out.println("  FORWARD PROPAGATION STAGE");
+                break;
+            default: System.out.println("  UNKNOWN STAGE " + state.get());
         }
     }
 
@@ -39,6 +47,12 @@ public class NumberOfClasses extends DefaultMasterCompute {
         registerPersistentAggregator(NUMBER_OF_NETWORKS_ID, IntMaxAggregator.class);
         registerAndInitializeWeightAggregators(BackwardPropagation.MAX_HIDDEN_LAYER_NUM,
                 BackwardPropagation.INPUT_LAYER_NEURON_COUNT, BackwardPropagation.HIDDEN_LAYER_NEURON_COUNT);
+
+        initializeLayerWeightAggs(BackwardPropagation.MAX_HIDDEN_LAYER_NUM,
+                BackwardPropagation.INPUT_LAYER_NEURON_COUNT,
+                BackwardPropagation.HIDDEN_LAYER_NEURON_COUNT,
+                BackwardPropagation.OUTPUT_LAYER_NEURON_COUNT);
+        setAggregatedValue(STATE_ID, new IntWritable(HIDDEN_LAYER_GENERATION_STATE));
     }
 
     private void initializeLayerWeightAggs(int finalHiddenLayerNum,
