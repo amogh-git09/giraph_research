@@ -2,7 +2,6 @@ package neural_net;
 
 import org.apache.giraph.aggregators.IntMaxAggregator;
 import org.apache.giraph.aggregators.IntOverwriteAggregator;
-import org.apache.giraph.aggregators.IntSumAggregator;
 import org.apache.giraph.aggregators.matrix.dense.DoubleDenseVector;
 import org.apache.giraph.aggregators.matrix.dense.DoubleDenseVectorSumAggregator;
 import org.apache.giraph.master.DefaultMasterCompute;
@@ -21,6 +20,7 @@ public class NumberOfClasses extends DefaultMasterCompute {
     public static final int BACKWARD_PROPAGATION_STATE = 3;
 
     public static final String WEIGHT_AGGREGATOR_PREFIX = "weightAggregator";
+    public static final String ERROR_AGGREGATOR_PREFIX = "errorAggregator";
     public static final String STATE_ID = "StateAggregator";
     public static final String NUMBER_OF_NETWORKS_ID = "NumberOfNetworksAggregator";
     public static final double EPSILON = 0.2;
@@ -28,7 +28,7 @@ public class NumberOfClasses extends DefaultMasterCompute {
 
     @Override
     public void compute() {
-        if(getSuperstep() > 15) {
+        if(getSuperstep() > 20) {
             haltComputation();
         }
 
@@ -41,6 +41,20 @@ public class NumberOfClasses extends DefaultMasterCompute {
                 break;
             case FORWARD_PROPAGATION_STATE: System.out.println("  FORWARD PROPAGATION STAGE");
                 break;
+            case BACKWARD_PROPAGATION_STATE:
+                System.out.println("  BACKWARD PROPAGATION STAGE");
+
+                for(int l = 1; l<=BackwardPropagation.MAX_HIDDEN_LAYER_NUM; l++) {
+                    String aggName = GetErrorAggregatorName(l, 1);
+                    System.out.println("The error vector for '" + aggName + "' is ");
+                    DoubleDenseVector vec = getAggregatedValue(aggName);
+                    for(int i=0; i<BackwardPropagation.HIDDEN_LAYER_NEURON_COUNT; i++) {
+                        System.out.print(vec.get(i) + "  ");
+                    }
+                    System.out.println("");
+                }
+
+                break;
             default: System.out.println("  UNKNOWN STAGE " + state.get());
         }
     }
@@ -49,7 +63,9 @@ public class NumberOfClasses extends DefaultMasterCompute {
     public void initialize() throws InstantiationException, IllegalAccessException {
         registerPersistentAggregator(STATE_ID, IntOverwriteAggregator.class);
         registerPersistentAggregator(NUMBER_OF_NETWORKS_ID, IntMaxAggregator.class);
-        registerAndInitializeWeightAggregators(BackwardPropagation.MAX_HIDDEN_LAYER_NUM,
+        registerWeightAggregators(BackwardPropagation.MAX_HIDDEN_LAYER_NUM,
+                BackwardPropagation.INPUT_LAYER_NEURON_COUNT, BackwardPropagation.HIDDEN_LAYER_NEURON_COUNT);
+        registerErrorAggregators(BackwardPropagation.MAX_HIDDEN_LAYER_NUM,
                 BackwardPropagation.INPUT_LAYER_NEURON_COUNT, BackwardPropagation.HIDDEN_LAYER_NEURON_COUNT);
 
         initializeLayerWeightAggs(BackwardPropagation.MAX_HIDDEN_LAYER_NUM,
@@ -95,9 +111,9 @@ public class NumberOfClasses extends DefaultMasterCompute {
         return String.format("%s:%d:%d", WEIGHT_AGGREGATOR_PREFIX, layerNum, neuronNum);
     }
 
-    private void registerAndInitializeWeightAggregators(int finalHiddenLayerNum,
-                                                        int inputLayerNeuronCount,
-                                                        int hiddenLayerNeuronCount)
+    private void registerWeightAggregators(int finalHiddenLayerNum,
+                                           int inputLayerNeuronCount,
+                                           int hiddenLayerNeuronCount)
             throws InstantiationException, IllegalAccessException {
 
         registerLayerWeightAgg(NeuralNetworkVertexInputFormat.INPUT_LAYER, inputLayerNeuronCount);
@@ -112,6 +128,31 @@ public class NumberOfClasses extends DefaultMasterCompute {
 
         for(int i=1; i<=neuronCount; i++) {
             String aggName = GetWeightAggregatorName(layerNum, i);
+            registerPersistentAggregator(aggName, DoubleDenseVectorSumAggregator.class);
+        }
+    }
+
+    public static String GetErrorAggregatorName(int layerNum, int neuronNum) {
+        return String.format("%s:%d:%d", ERROR_AGGREGATOR_PREFIX, layerNum, neuronNum);
+    }
+
+    private void registerErrorAggregators(int finalHiddenLayerNum,
+                                          int inputLayerNeuronCount,
+                                          int hiddenLayerNeuronCount)
+            throws InstantiationException, IllegalAccessException {
+
+        registerErrorAgg(NeuralNetworkVertexInputFormat.INPUT_LAYER, inputLayerNeuronCount);
+
+        for(int i=2; i<=finalHiddenLayerNum; i++) {
+            registerErrorAgg(i, hiddenLayerNeuronCount);
+        }
+    }
+
+    private void registerErrorAgg(int layerNum, int neuronCount)
+            throws IllegalAccessException, InstantiationException {
+
+        for(int i=1; i<=neuronCount; i++) {
+            String aggName = GetErrorAggregatorName(layerNum, i);
             registerPersistentAggregator(aggName, DoubleDenseVectorSumAggregator.class);
         }
     }

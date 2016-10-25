@@ -12,19 +12,25 @@ import java.io.IOException;
  */
 public class NeuronValue implements WritableComparable {
     private DoubleWritable activation = new DoubleWritable(0.0D);
+    private DoubleWritable weightedInput = new DoubleWritable(0.0D);
     private DoubleWritable error = new DoubleWritable(0.0D);
 
     public NeuronValue() {
 
     }
 
-    public NeuronValue(Double a, Double e) {
+    public NeuronValue(Double a, Double w, Double e) {
         activation = new DoubleWritable(a);
+        weightedInput = new DoubleWritable(w);
         error = new DoubleWritable(e);
     }
 
     public double getActivation() {
         return activation.get();
+    }
+
+    public double getWeightedInput() {
+        return weightedInput.get();
     }
 
     public double getError() {
@@ -33,6 +39,10 @@ public class NeuronValue implements WritableComparable {
 
     public void setActivation(Double a) {
         activation.set(a);
+    }
+
+    public void setWeightedInput(Double w) {
+        weightedInput.set(w);
     }
 
     public void setError(Double e) {
@@ -48,12 +58,14 @@ public class NeuronValue implements WritableComparable {
     @Override
     public void write(DataOutput dataOutput) throws IOException {
         activation.write(dataOutput);
+        weightedInput.write(dataOutput);
         error.write(dataOutput);
     }
 
     @Override
     public void readFields(DataInput dataInput) throws IOException {
         activation.readFields(dataInput);
+        weightedInput.readFields(dataInput);
         error.readFields(dataInput);
     }
 }

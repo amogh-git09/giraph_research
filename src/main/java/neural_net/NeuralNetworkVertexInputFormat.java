@@ -90,9 +90,9 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
             NeuronValue val;
 
             if(layerNum == OUTPUT_LAYER)            // in case of output layer, store true/false value in 'error'
-                val = new NeuronValue(0D, Double.parseDouble(data));
+                val = new NeuronValue(0D, 0D, Double.parseDouble(data));
             else
-                val = new NeuronValue(Double.parseDouble(data), 0d);
+                val = new NeuronValue(Double.parseDouble(data), 0D, 0D);
 
             vertex.initialize(id, val);
             return vertex;
