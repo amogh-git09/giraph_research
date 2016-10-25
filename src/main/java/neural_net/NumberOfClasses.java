@@ -28,7 +28,7 @@ public class NumberOfClasses extends DefaultMasterCompute {
 
     @Override
     public void compute() {
-        if(getSuperstep() > 20) {
+        if(getSuperstep() > 50) {
             haltComputation();
         }
 
