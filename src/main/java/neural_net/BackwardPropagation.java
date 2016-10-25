@@ -15,7 +15,7 @@ import java.io.IOException;
  * Created by amogh-lab on 16/10/13.
  */
 public class BackwardPropagation extends
-        BasicComputation<Text, DoubleWritable, DoubleWritable, DoubleWritable> {
+        BasicComputation<Text, NeuronValue, DoubleWritable, DoubleWritable> {
 
     static final int MAX_HIDDEN_LAYER_NUM = 3;                 // minimum value 2
     static final int HIDDEN_LAYER_NEURON_COUNT = 4;
@@ -24,7 +24,7 @@ public class BackwardPropagation extends
     static final int OUTPUT_LAYER = -1;
 
     @Override
-    public void compute(Vertex<Text, DoubleWritable, DoubleWritable> vertex,
+    public void compute(Vertex<Text, NeuronValue, DoubleWritable> vertex,
                         Iterable<DoubleWritable> messages) throws IOException {
 
         System.out.println("SS: " + getSuperstep() + "  Vertex ID: " + vertex.getId());
@@ -73,8 +73,10 @@ public class BackwardPropagation extends
                         System.out.println("message : " + m);
                     }
 
-                    vertex.setValue(new DoubleWritable(activation));
-                    System.out.println("New activation: " + activation);
+                    vertex.getValue().setActivation(activation);
+
+                    System.out.println("New activation: " + vertex.getValue().getActivation());
+                    System.out.println("Error: " + vertex.getValue().getError());
                 }
 
                 if(layerNum != NeuralNetworkVertexInputFormat.OUTPUT_LAYER)
@@ -86,18 +88,17 @@ public class BackwardPropagation extends
         }
     }
 
-    private void forwardProp(Vertex<Text, DoubleWritable, DoubleWritable> vertex) {
+    private void forwardProp(Vertex<Text, NeuronValue, DoubleWritable> vertex) {
         for(Edge<Text, DoubleWritable> e : vertex.getEdges()) {
             Text dstId = e.getTargetVertexId();
             DoubleWritable weight = e.getValue();
-            DoubleWritable activation = vertex.getValue();
-            Double fragment = weight.get()*activation.get();
-//            System.out.println("Sending msg: " + fragment + " to " + dstId);
+            Double activation = vertex.getValue().getActivation();
+            Double fragment = weight.get()*activation;
             sendMessage(dstId, new DoubleWritable(fragment));
         }
     }
 
-    private void generateEdgesToNextLayer(Vertex<Text, DoubleWritable, DoubleWritable> vertex,
+    private void generateEdgesToNextLayer(Vertex<Text, NeuronValue, DoubleWritable> vertex,
                                           int networkNum, int srcLayer, int dstLayer,
                                           int nextLayerCount, int neuronNum) throws IOException {
 

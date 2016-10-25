@@ -25,7 +25,7 @@ import java.util.List;
 /**
  * Created by amogh-lab on 16/10/10.
  */
-public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, DoubleWritable, DoubleWritable> {
+public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, NeuronValue, DoubleWritable> {
     GiraphTextInputFormat textInputFormat = new GiraphTextInputFormat();
     static final int OUTPUT_LAYER = -1;
     static final int INPUT_LAYER = 1;
@@ -34,7 +34,7 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Doub
     private int layerNum = 1;
 
     @Override
-    public VertexReader<Text, DoubleWritable, DoubleWritable> createVertexReader(InputSplit split, TaskAttemptContext context) throws IOException {
+    public VertexReader<Text, NeuronValue, DoubleWritable> createVertexReader(InputSplit split, TaskAttemptContext context) throws IOException {
         return new NeuralNetworkVertexReader();
     }
 
@@ -48,7 +48,7 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Doub
         return textInputFormat.getVertexSplits(context);
     }
 
-    public class NeuralNetworkVertexReader extends VertexReader<Text, DoubleWritable, DoubleWritable> {
+    public class NeuralNetworkVertexReader extends VertexReader<Text, NeuronValue, DoubleWritable> {
         private RecordReader<LongWritable, Text> lineRecordReader;
         private TaskAttemptContext context;
 
@@ -65,7 +65,7 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Doub
         }
 
         @Override
-        public Vertex<Text, DoubleWritable, DoubleWritable> getCurrentVertex() throws IOException, InterruptedException {
+        public Vertex<Text, NeuronValue, DoubleWritable> getCurrentVertex() throws IOException, InterruptedException {
             Text line = lineRecordReader.getCurrentValue();
 
             while(line.toString().equals("output")) {
@@ -84,10 +84,15 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Doub
             }
             String data = line.toString();
 
-            Vertex<Text, DoubleWritable, DoubleWritable> vertex = getConf().createVertex();
+            Vertex<Text, NeuronValue, DoubleWritable> vertex = getConf().createVertex();
             Text id = new Text(networkNum + ":" + layerNum + ":" + vertexNum);
             vertexNum++;
-            DoubleWritable val = new DoubleWritable(Double.parseDouble(data));
+            NeuronValue val;
+
+            if(layerNum == OUTPUT_LAYER)            // in case of output layer, store true/false value in 'error'
+                val = new NeuronValue(0D, Double.parseDouble(data));
+            else
+                val = new NeuronValue(Double.parseDouble(data), 0d);
 
             vertex.initialize(id, val);
             return vertex;
