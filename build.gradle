@@ -3,6 +3,18 @@ repositories {
     mavenCentral()
 }
 
+//create a single Jar with all dependencies
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title': 'Neural Network Giraph',
+                'Implementation-Version': 1.0,
+                'Main-Class': 'neural_net.BackwardPropagation'
+    }
+    baseName = project.name + '-all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
+
 // In this section you declare the dependencies for your production and test code
 dependencies {
 // https://mvnrepository.com/artifact/org.apache.giraph/giraph-core
@@ -11,4 +23,6 @@ dependencies {
     compile group: 'org.apache.hadoop', name: 'hadoop-core', version: '1.2.1'
     // https://mvnrepository.com/artifact/junit/junit
     compile group: 'junit', name: 'junit', version: '4.12'
+    // https://mvnrepository.com/artifact/org.apache.commons/commons-math3
+    compile group: 'org.apache.commons', name: 'commons-math3', version: '3.0'
 }

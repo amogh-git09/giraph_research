@@ -16,7 +16,9 @@ import java.util.Random;
 public class NumberOfClasses extends DefaultMasterCompute {
 
     public static final int HIDDEN_LAYER_GENERATION_STATE = 0;
-    public static final int FORWARD_PROPAGATION_STATE = 1;
+    public static final int BACK_EDGES_GENERATION_STATE = 1;
+    public static final int FORWARD_PROPAGATION_STATE = 2;
+    public static final int BACKWARD_PROPAGATION_STATE = 3;
 
     public static final String WEIGHT_AGGREGATOR_PREFIX = "weightAggregator";
     public static final String STATE_ID = "StateAggregator";
@@ -26,7 +28,7 @@ public class NumberOfClasses extends DefaultMasterCompute {
 
     @Override
     public void compute() {
-        if(getSuperstep() > 10) {
+        if(getSuperstep() > 15) {
             haltComputation();
         }
 
@@ -34,6 +36,8 @@ public class NumberOfClasses extends DefaultMasterCompute {
         IntWritable state = getAggregatedValue(STATE_ID);
         switch (state.get()) {
             case HIDDEN_LAYER_GENERATION_STATE: System.out.println("  HIDDEN LAYER GENERATION STAGE");
+                break;
+            case BACK_EDGES_GENERATION_STATE: System.out.println("  BACK EDGES GENERATION STAGE");
                 break;
             case FORWARD_PROPAGATION_STATE: System.out.println("  FORWARD PROPAGATION STAGE");
                 break;
