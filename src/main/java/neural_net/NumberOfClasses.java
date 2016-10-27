@@ -1,10 +1,12 @@
 package neural_net;
 
+import org.apache.giraph.aggregators.DoubleSumAggregator;
 import org.apache.giraph.aggregators.IntMaxAggregator;
 import org.apache.giraph.aggregators.IntOverwriteAggregator;
 import org.apache.giraph.aggregators.matrix.dense.DoubleDenseVector;
 import org.apache.giraph.aggregators.matrix.dense.DoubleDenseVectorSumAggregator;
 import org.apache.giraph.master.DefaultMasterCompute;
+import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 
 import java.util.Random;
@@ -19,6 +21,7 @@ public class NumberOfClasses extends DefaultMasterCompute {
     public static final int FORWARD_PROPAGATION_STATE = 2;
     public static final int BACKWARD_PROPAGATION_STATE = 3;
 
+    public static final String COST_AGGREGATOR = "costAggregator";
     public static final String WEIGHT_AGGREGATOR_PREFIX = "weightAggregator";
     public static final String ERROR_AGGREGATOR_PREFIX = "errorAggregator";
     public static final String STATE_ID = "StateAggregator";
@@ -28,31 +31,35 @@ public class NumberOfClasses extends DefaultMasterCompute {
 
     @Override
     public void compute() {
-        if(getSuperstep() > 50) {
+        if(getSuperstep() > 300) {
             haltComputation();
         }
 
-        System.out.print("\nSS: " + getSuperstep());
+//        System.out.print("\nSS: " + getSuperstep());
         IntWritable state = getAggregatedValue(STATE_ID);
         switch (state.get()) {
             case HIDDEN_LAYER_GENERATION_STATE: System.out.println("  HIDDEN LAYER GENERATION STAGE");
                 break;
             case BACK_EDGES_GENERATION_STATE: System.out.println("  BACK EDGES GENERATION STAGE");
                 break;
-            case FORWARD_PROPAGATION_STATE: System.out.println("  FORWARD PROPAGATION STAGE");
+            case FORWARD_PROPAGATION_STATE: System.out.println("SS: " + getSuperstep() + "  FORWARD PROPAGATION STAGE");
+                DoubleWritable costWr = getAggregatedValue(COST_AGGREGATOR);
+                IntWritable m = getAggregatedValue(NUMBER_OF_NETWORKS_ID);
+                double cost = - costWr.get() / m.get();
+                System.out.println("Cost at master = " + cost);
                 break;
             case BACKWARD_PROPAGATION_STATE:
-                System.out.println("  BACKWARD PROPAGATION STAGE");
+//                System.out.println("  BACKWARD PROPAGATION STAGE");
 
-                for(int l = 1; l<=BackwardPropagation.MAX_HIDDEN_LAYER_NUM; l++) {
-                    String aggName = GetErrorAggregatorName(l, 1);
-                    System.out.println("The error vector for '" + aggName + "' is ");
-                    DoubleDenseVector vec = getAggregatedValue(aggName);
-                    for(int i=0; i<BackwardPropagation.HIDDEN_LAYER_NEURON_COUNT; i++) {
-                        System.out.print(vec.get(i) + "  ");
-                    }
-                    System.out.println("");
-                }
+//                for(int l = 1; l<=BackwardPropagation.MAX_HIDDEN_LAYER_NUM; l++) {
+//                    String aggName = GetErrorAggregatorName(l, 1);
+//                    System.out.println("The error vector for '" + aggName + "' is ");
+//                    DoubleDenseVector vec = getAggregatedValue(aggName);
+//                    for(int i=0; i<BackwardPropagation.HIDDEN_LAYER_NEURON_COUNT; i++) {
+//                        System.out.print(vec.get(i) + "  ");
+//                    }
+//                    System.out.println("");
+//                }
 
                 break;
             default: System.out.println("  UNKNOWN STAGE " + state.get());
@@ -63,6 +70,7 @@ public class NumberOfClasses extends DefaultMasterCompute {
     public void initialize() throws InstantiationException, IllegalAccessException {
         registerPersistentAggregator(STATE_ID, IntOverwriteAggregator.class);
         registerPersistentAggregator(NUMBER_OF_NETWORKS_ID, IntMaxAggregator.class);
+        registerPersistentAggregator(COST_AGGREGATOR, DoubleSumAggregator.class);
         registerWeightAggregators(BackwardPropagation.MAX_HIDDEN_LAYER_NUM,
                 BackwardPropagation.INPUT_LAYER_NEURON_COUNT, BackwardPropagation.HIDDEN_LAYER_NEURON_COUNT);
         registerErrorAggregators(BackwardPropagation.MAX_HIDDEN_LAYER_NUM,

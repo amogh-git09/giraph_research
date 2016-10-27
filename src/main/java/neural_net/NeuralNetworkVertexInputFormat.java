@@ -32,6 +32,7 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
     private int networkNum = 1;
     private int vertexNum = 1;
     private int layerNum = 1;
+    private int counter = 0;
 
     @Override
     public VertexReader<Text, NeuronValue, DoubleWritable> createVertexReader(InputSplit split, TaskAttemptContext context) throws IOException {
@@ -66,6 +67,12 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
 
         @Override
         public Vertex<Text, NeuronValue, DoubleWritable> getCurrentVertex() throws IOException, InterruptedException {
+            counter++;
+
+            if(counter%1000 == 0) {
+                System.out.println("Read " + counter + " vertices");
+            }
+
             Text line = lineRecordReader.getCurrentValue();
 
             while(line.toString().equals("output")) {
@@ -89,12 +96,14 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
             vertexNum++;
             NeuronValue val;
 
-            if(layerNum == OUTPUT_LAYER)            // in case of output layer, store true/false value in 'error'
-                val = new NeuronValue(0D, 0D, Double.parseDouble(data));
+            if(layerNum == OUTPUT_LAYER) {           // in case of output layer, store true/false value in 'error'
+                val = new NeuronValue(0d, 0d, 0d, Integer.parseInt(data));
+            }
             else
-                val = new NeuronValue(Double.parseDouble(data), 0D, 0D);
+                val = new NeuronValue(Double.parseDouble(data), 0d, 0d, 0);
 
             vertex.initialize(id, val);
+
             return vertex;
         }
 

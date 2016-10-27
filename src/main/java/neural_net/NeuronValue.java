@@ -1,6 +1,7 @@
 package neural_net;
 
 import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.WritableComparable;
 
 import java.io.DataInput;
@@ -14,15 +15,17 @@ public class NeuronValue implements WritableComparable {
     private DoubleWritable activation = new DoubleWritable(0.0D);
     private DoubleWritable weightedInput = new DoubleWritable(0.0D);
     private DoubleWritable error = new DoubleWritable(0.0D);
+    private IntWritable classFlag = new IntWritable(0);
 
     public NeuronValue() {
 
     }
 
-    public NeuronValue(Double a, Double w, Double e) {
+    public NeuronValue(Double a, Double w, Double e, int f) {
         activation = new DoubleWritable(a);
         weightedInput = new DoubleWritable(w);
         error = new DoubleWritable(e);
+        classFlag = new IntWritable(f);
     }
 
     public double getActivation() {
@@ -35,6 +38,14 @@ public class NeuronValue implements WritableComparable {
 
     public double getError() {
         return error.get();
+    }
+
+    public int getClassFlag() {
+        return classFlag.get();
+    }
+
+    public void setClassFlag(int f) {
+        classFlag.set(f);
     }
 
     public void setActivation(Double a) {
@@ -60,6 +71,7 @@ public class NeuronValue implements WritableComparable {
         activation.write(dataOutput);
         weightedInput.write(dataOutput);
         error.write(dataOutput);
+        classFlag.write(dataOutput);
     }
 
     @Override
@@ -67,5 +79,6 @@ public class NeuronValue implements WritableComparable {
         activation.readFields(dataInput);
         weightedInput.readFields(dataInput);
         error.readFields(dataInput);
+        classFlag.readFields(dataInput);
     }
 }
