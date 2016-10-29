@@ -75,11 +75,19 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
 
             Text line = lineRecordReader.getCurrentValue();
 
-            while(line.toString().equals("output")) {
+            if (line.toString().equals("output")) {
                 vertexNum = 1;
-                lineRecordReader.nextKeyValue();
-                line = lineRecordReader.getCurrentValue();
+
+                //generate bias unit
+                Vertex<Text, NeuronValue, DoubleWritable> vertex = getConf().createVertex();
+                Text id = new Text(networkNum + ":" + layerNum + ":" + 0);
+                NeuronValue val = new NeuronValue(1d, 0d, 0d, 0);
+                vertex.initialize(id, val);
+
+//                lineRecordReader.nextKeyValue();
+//                line = lineRecordReader.getCurrentValue();
                 layerNum = OUTPUT_LAYER;      //output layer
+                return vertex;
             }
 
             while (line.toString().equals("done")) {

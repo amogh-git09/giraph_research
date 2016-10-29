@@ -50,7 +50,7 @@ public class CSVToUsableFormat {
                 String line;
                 while((line = br.readLine()) != null) {
                     counter++;
-                    if(counter >= 10) {
+                    if(counter >= 5) {
                         System.out.println("breaking");
                         break;
                     }

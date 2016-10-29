@@ -26,27 +26,28 @@ public class NumberOfClasses extends DefaultMasterCompute {
     public static final String ERROR_AGGREGATOR_PREFIX = "errorAggregator";
     public static final String STATE_ID = "StateAggregator";
     public static final String NUMBER_OF_NETWORKS_ID = "NumberOfNetworksAggregator";
-    public static final double EPSILON = 0.2;
+    public static final double EPSILON = 0.5;
     public static final Random random = new Random();
 
     @Override
     public void compute() {
-        if(getSuperstep() > 300) {
+        if(getSuperstep() > 100) {
             haltComputation();
         }
 
-//        System.out.print("\nSS: " + getSuperstep());
+//        System.out.print("SS: " + getSuperstep());
         IntWritable state = getAggregatedValue(STATE_ID);
         switch (state.get()) {
             case HIDDEN_LAYER_GENERATION_STATE: System.out.println("  HIDDEN LAYER GENERATION STAGE");
                 break;
             case BACK_EDGES_GENERATION_STATE: System.out.println("  BACK EDGES GENERATION STAGE");
                 break;
-            case FORWARD_PROPAGATION_STATE: System.out.println("SS: " + getSuperstep() + "  FORWARD PROPAGATION STAGE");
+            case FORWARD_PROPAGATION_STATE:
+//                System.out.println("SS: " + getSuperstep() + "  FORWARD PROPAGATION STAGE");
                 DoubleWritable costWr = getAggregatedValue(COST_AGGREGATOR);
                 IntWritable m = getAggregatedValue(NUMBER_OF_NETWORKS_ID);
                 double cost = - costWr.get() / m.get();
-                System.out.println("Cost at master = " + cost);
+                System.out.println("SS: " + getSuperstep() + ", Cost at master = " + cost);
                 break;
             case BACKWARD_PROPAGATION_STATE:
 //                System.out.println("  BACKWARD PROPAGATION STAGE");
@@ -102,11 +103,57 @@ public class NumberOfClasses extends DefaultMasterCompute {
     }
 
     private void initializeLayerWeightAgg(int layerNum, int neuronCount, int numOfOutgoingEdges) {
-        for(int i=1; i<=neuronCount; i++) {
+        for(int i=0; i<=neuronCount; i++) {
             DoubleDenseVector vector = new DoubleDenseVector(numOfOutgoingEdges);
 
             for(int j=0; j<numOfOutgoingEdges; j++) {
                 Double initVal = getRandomInRange(-EPSILON, EPSILON);
+
+                switch (layerNum) {
+                    case 1:
+                        switch (i) {
+                            case 0:
+                                switch (j) {
+                                    case 0: initVal = -0.051; break;
+                                    case 1: initVal = 0.002; break;
+                                }
+                                break;
+                            case 1:
+                                switch (j) {
+                                    case 0: initVal = 0.003; break;
+                                    case 1: initVal = 0.016; break;
+                                }
+                                break;
+                            case 2:
+                                switch (j) {
+                                    case 0: initVal = 0.071; break;
+                                    case 1: initVal = 0.049; break;
+                                }
+                                break;
+                        }
+                        break;
+
+                    case 2:
+                        switch (i) {
+                            case 0:
+                                switch (j) {
+                                    case 0: initVal = 0.012; break;
+                                }
+                                break;
+                            case 1:
+                                switch (j) {
+                                    case 0: initVal = -0.163; break;
+                                }
+                                break;
+                            case 2:
+                                switch (j) {
+                                    case 0: initVal = 0.058; break;
+                                }
+                                break;
+                        }
+                        break;
+                }
+
                 vector.set(j, initVal);
             }
 
@@ -134,7 +181,7 @@ public class NumberOfClasses extends DefaultMasterCompute {
     private void registerLayerWeightAgg(int layerNum, int neuronCount)
             throws IllegalAccessException, InstantiationException {
 
-        for(int i=1; i<=neuronCount; i++) {
+        for(int i=0; i<=neuronCount; i++) {
             String aggName = GetWeightAggregatorName(layerNum, i);
             registerPersistentAggregator(aggName, DoubleDenseVectorSumAggregator.class);
         }
@@ -159,7 +206,7 @@ public class NumberOfClasses extends DefaultMasterCompute {
     private void registerErrorAgg(int layerNum, int neuronCount)
             throws IllegalAccessException, InstantiationException {
 
-        for(int i=1; i<=neuronCount; i++) {
+        for(int i=0; i<=neuronCount; i++) {
             String aggName = GetErrorAggregatorName(layerNum, i);
             registerPersistentAggregator(aggName, DoubleDenseVectorSumAggregator.class);
         }
