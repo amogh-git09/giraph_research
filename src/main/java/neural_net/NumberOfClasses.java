@@ -31,11 +31,11 @@ public class NumberOfClasses extends DefaultMasterCompute {
 
     @Override
     public void compute() {
-        if(getSuperstep() > 100) {
+        if(getSuperstep() > 350) {
             haltComputation();
         }
 
-//        System.out.print("SS: " + getSuperstep());
+        System.out.print("SS: " + getSuperstep());
         IntWritable state = getAggregatedValue(STATE_ID);
         switch (state.get()) {
             case HIDDEN_LAYER_GENERATION_STATE: System.out.println("  HIDDEN LAYER GENERATION STAGE");
