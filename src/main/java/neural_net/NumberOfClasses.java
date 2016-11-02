@@ -29,13 +29,15 @@ public class NumberOfClasses extends DefaultMasterCompute {
     public static final double EPSILON = 0.5;
     public static final Random random = new Random();
 
+    int printCounter = 3;
+
     @Override
     public void compute() {
-        if(getSuperstep() > 350) {
+        if(getSuperstep() > 1000) {
             haltComputation();
         }
 
-        System.out.print("SS: " + getSuperstep());
+//        System.out.print("\nSS: " + getSuperstep());
         IntWritable state = getAggregatedValue(STATE_ID);
         switch (state.get()) {
             case HIDDEN_LAYER_GENERATION_STATE: System.out.println("  HIDDEN LAYER GENERATION STAGE");
@@ -44,10 +46,12 @@ public class NumberOfClasses extends DefaultMasterCompute {
                 break;
             case FORWARD_PROPAGATION_STATE:
 //                System.out.println("SS: " + getSuperstep() + "  FORWARD PROPAGATION STAGE");
-                DoubleWritable costWr = getAggregatedValue(COST_AGGREGATOR);
-                IntWritable m = getAggregatedValue(NUMBER_OF_NETWORKS_ID);
-                double cost = - costWr.get() / m.get();
-                System.out.println("SS: " + getSuperstep() + ", Cost at master = " + cost);
+                if(printCounter++ % 3 == 0) {
+                    DoubleWritable costWr = getAggregatedValue(COST_AGGREGATOR);
+                    IntWritable m = getAggregatedValue(NUMBER_OF_NETWORKS_ID);
+                    double cost = -costWr.get() / m.get();
+                    System.out.println("SS: " + getSuperstep() + ", Cost at master = " + cost);
+                }
                 break;
             case BACKWARD_PROPAGATION_STATE:
 //                System.out.println("  BACKWARD PROPAGATION STAGE");

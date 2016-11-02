@@ -20,21 +20,21 @@ import java.io.IOException;
 public class BackwardPropagation extends
         BasicComputation<Text, NeuronValue, DoubleWritable, Text> {
 
-//    static final int MAX_HIDDEN_LAYER_NUM = 2;                 // minimum value 2
-//    static final int INPUT_LAYER_NEURON_COUNT = 7;
-//    static final int HIDDEN_LAYER_NEURON_COUNT = 7;
-//    static final int OUTPUT_LAYER_NEURON_COUNT = 29;
-
     static final int MAX_HIDDEN_LAYER_NUM = 2;                 // minimum value 2
-    static final int INPUT_LAYER_NEURON_COUNT = 2;
-    static final int HIDDEN_LAYER_NEURON_COUNT = 2;
-    static final int OUTPUT_LAYER_NEURON_COUNT = 1;
+    static final int INPUT_LAYER_NEURON_COUNT = 7;
+    static final int HIDDEN_LAYER_NEURON_COUNT = 7;
+    static final int OUTPUT_LAYER_NEURON_COUNT = 29;
+
+//    static final int MAX_HIDDEN_LAYER_NUM = 2;                 // minimum value 2
+//    static final int INPUT_LAYER_NEURON_COUNT = 2;
+//    static final int HIDDEN_LAYER_NEURON_COUNT = 2;
+//    static final int OUTPUT_LAYER_NEURON_COUNT = 1;
 
     static final int BIAS_UNIT = 0;
     static final int INPUT_LAYER = 1;
     static final int OUTPUT_LAYER = -1;
     static final String DELIMITER = ":";
-    static final double LEARNING_RATE = 0.1;
+    static final double LEARNING_RATE = 0.05;
 
     public static void main(String[] args) throws Exception {
         System.exit(ToolRunner.run(new GiraphRunner(), args));
@@ -253,11 +253,11 @@ public class BackwardPropagation extends
         DoubleDenseVector canceller = new DoubleDenseVector(nextLayerNeuronCount);
 
 //        System.out.print("Canceller: ");
-//        for (int i = 0; i < nextLayerNeuronCount; i++) {
-//            Double grad = gradients.get(i);
-//            canceller.set(i, -grad);
+        for (int i = 0; i < nextLayerNeuronCount; i++) {
+            Double grad = gradients.get(i);
+            canceller.set(i, -grad);
 //            System.out.print(canceller.get(i) + "  ");
-//        }
+        }
 //        System.out.println("");
 
         aggregate(aggName, canceller);
@@ -271,7 +271,7 @@ public class BackwardPropagation extends
             System.out.println("\n\n\nACTIVATION ZERO\n\n\n");
             return 0;
         }
-        double fragment = y * Math.log(activation) + (1 - y) * Math.log(1 - activation);
+        double fragment = -y * Math.log(activation) + (1 - y) * Math.log(1 - activation);
 //        System.out.printf("y: %d, activation: %f\n", y, activation);
 //        System.out.printf("fragment = %f\n", fragment);
         return fragment;
@@ -284,13 +284,19 @@ public class BackwardPropagation extends
         IntWritable m = getAggregatedValue(NumberOfClasses.NUMBER_OF_NETWORKS_ID);
         String aggName = NumberOfClasses.GetErrorAggregatorName(layerNum, neuronNum);
         DoubleDenseVector gradients = getAggregatedValue(aggName);
-        int cnt = 0;
 
         for (Edge<Text, DoubleWritable> e : vertex.getMutableEdges()) {
             if (isAnEdgeToNextLayer(e, layerNum)) {
                 Text dstId = e.getTargetVertexId();
                 String[] edgeTokens = dstId.toString().split(DELIMITER);
                 int dstNeuronNum = Integer.parseInt(edgeTokens[2]);
+
+//                System.out.print("gradients: ");
+                int nextLayerNeuronCnt = layerNum == MAX_HIDDEN_LAYER_NUM ? OUTPUT_LAYER_NEURON_COUNT : HIDDEN_LAYER_NEURON_COUNT;
+                for(int i=0; i<nextLayerNeuronCnt; i++) {
+//                    System.out.print(gradients.get(i) + "  ");
+                }
+//                System.out.println("");
 
                 Double gradient = gradients.get(dstNeuronNum - 1) / m.get();
                 Double old = e.getValue().get();
@@ -339,6 +345,7 @@ public class BackwardPropagation extends
 
     private void backPropagateError(Vertex<Text, NeuronValue, DoubleWritable> vertex, int layerNum, int neuronNum) {
         for (Edge<Text, DoubleWritable> e : vertex.getEdges()) {
+
             Text dstId = e.getTargetVertexId();
 
             if (isAnEdgeToPrevLayer(e, layerNum)) {
