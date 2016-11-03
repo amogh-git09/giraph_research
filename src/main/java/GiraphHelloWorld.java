@@ -11,10 +11,10 @@ import org.apache.hadoop.util.ToolRunner;
 import java.io.IOException;
 
 public class GiraphHelloWorld extends
-        BasicComputation<Text, IntWritable, IntWritable, NullWritable> {
+        BasicComputation<IntWritable, IntWritable, NullWritable, NullWritable> {
 
     @Override
-    public void compute(Vertex<Text, IntWritable, IntWritable> vertex,
+    public void compute(Vertex<IntWritable, IntWritable, NullWritable> vertex,
                         Iterable<NullWritable> messages) throws IOException {
 
 //        if(getSuperstep() < 2) {
@@ -30,7 +30,7 @@ public class GiraphHelloWorld extends
 
         System.out.print("Hello world from: " + vertex.getId().toString() + " who is following :");
 
-        for(Edge<Text, IntWritable> e: vertex.getEdges()) {
+        for(Edge<IntWritable, NullWritable> e: vertex.getEdges()) {
             System.out.print(" " + e.getTargetVertexId() + ",");
         }
         System.out.println("");

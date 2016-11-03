@@ -35,6 +35,7 @@ public class BackwardPropagation extends
     static final int OUTPUT_LAYER = -1;
     static final String DELIMITER = ":";
     static final double LEARNING_RATE = 0.1;
+    static final int MAX_ITER = 15000;
 
     public static void main(String[] args) throws Exception {
         System.exit(ToolRunner.run(new GiraphRunner(), args));
@@ -55,6 +56,38 @@ public class BackwardPropagation extends
             if (layerNum == NeuralNetworkVertexInputFormat.OUTPUT_LAYER) {
                 vertex.voteToHalt();
                 return;
+            }
+        }
+
+
+        if (getSuperstep() >= MAX_ITER - MAX_HIDDEN_LAYER_NUM) {
+            //aggregate the weights
+            if (networkNum == 1 && layerNum != OUTPUT_LAYER) {
+                System.out.println("Aggregating weights for vertex " + vertex.getId());
+                String aggName = NumberOfClasses.GetWeightAggregatorName(layerNum, neuronNum);
+                DoubleDenseVector weights = getAggregatedValue(aggName);
+
+                //flush the aggregator
+                int vecSize = layerNum == INPUT_LAYER ? HIDDEN_LAYER_NEURON_COUNT : OUTPUT_LAYER_NEURON_COUNT;
+                DoubleDenseVector vec = new DoubleDenseVector(vecSize);
+                for (int v = 0; v < vecSize; v++) {
+                    vec.set(v, -weights.get(v));
+                }
+                aggregate(aggName, vec);
+
+                //set latest weights
+                for (Edge<Text, DoubleWritable> e : vertex.getMutableEdges()) {
+                    if (isAnEdgeToNextLayer(e, layerNum)) {
+                        Text dstId = e.getTargetVertexId();
+                        String[] edgeTokens = dstId.toString().split(DELIMITER);
+                        int dstNeuronNum = Integer.parseInt(edgeTokens[2]);
+
+                        System.out.printf("Edge from %s --> %s, weight = %f\n", vertex.getId(), dstId.toString(), e.getValue().get());
+                        vec.set(dstNeuronNum - 1, e.getValue().get());
+                    }
+                }
+
+                aggregate(aggName, vec);
             }
         }
 
@@ -197,7 +230,7 @@ public class BackwardPropagation extends
                         Double input = Double.parseDouble(msgTokens[1]);
                         Double srcError = Double.parseDouble(msgTokens[2]);
 
-                        errVector.set(senderNeuronNum - 1, activation*srcError);      // to calculate gradient later
+                        errVector.set(senderNeuronNum - 1, activation * srcError);      // to calculate gradient later
                         weightedError += input;
 //                        System.out.println("message   : " + m);
                     }
@@ -273,8 +306,8 @@ public class BackwardPropagation extends
         }
         double fragment = y * Math.log(activation) + (1 - y) * Math.log(1 - activation);
 
-        if(fragment > 0) {
-            System.out.printf("negative cost found for vertex: %s \nactivation = %f, cost = %f, y = %d\n",
+        if (fragment > 0) {
+            System.out.printf("positive cost found for vertex: %s \nactivation = %f, cost = %f, y = %d\n",
                     vertex.getId(), activation, fragment, y);
         }
 
@@ -299,14 +332,14 @@ public class BackwardPropagation extends
 
 //                System.out.print("gradients: ");
                 int nextLayerNeuronCnt = layerNum == MAX_HIDDEN_LAYER_NUM ? OUTPUT_LAYER_NEURON_COUNT : HIDDEN_LAYER_NEURON_COUNT;
-                for(int i=0; i<nextLayerNeuronCnt; i++) {
+                for (int i = 0; i < nextLayerNeuronCnt; i++) {
 //                    System.out.print(gradients.get(i) + "  ");
                 }
 //                System.out.println("");
 
                 Double gradient = gradients.get(dstNeuronNum - 1) / m.get();
                 Double old = e.getValue().get();
-                Double update = gradient*LEARNING_RATE;
+                Double update = gradient * LEARNING_RATE;
 
                 // gradient descent
                 e.getValue().set(old - update);
@@ -337,7 +370,7 @@ public class BackwardPropagation extends
 
                 Double gradient = gradients.get(neuronNum - 1) / m.get();
                 Double old = e.getValue().get();
-                Double update = gradient*LEARNING_RATE;
+                Double update = gradient * LEARNING_RATE;
 
 //                System.out.println("Updating back edge " + vertex.getId() + " --> " + e.getTargetVertexId());
 //                System.out.printf("Old val: %f, gradient: %f, update: %f, new val: %f\n",

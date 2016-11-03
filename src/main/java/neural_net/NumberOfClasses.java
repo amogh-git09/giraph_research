@@ -33,7 +33,7 @@ public class NumberOfClasses extends DefaultMasterCompute {
 
     @Override
     public void compute() {
-        if(getSuperstep() > 100) {
+        if(getSuperstep() > BackwardPropagation.MAX_ITER) {
             //print weights
 
             System.out.println("\n-------- HALT PROCESSING -----------\n\n");
@@ -113,6 +113,7 @@ public class NumberOfClasses extends DefaultMasterCompute {
 
     @Override
     public void initialize() throws InstantiationException, IllegalAccessException {
+        System.out.println("Registering all the aggregators");
         registerPersistentAggregator(STATE_ID, IntOverwriteAggregator.class);
         registerPersistentAggregator(NUMBER_OF_NETWORKS_ID, IntMaxAggregator.class);
         registerPersistentAggregator(COST_AGGREGATOR, DoubleSumAggregator.class);
