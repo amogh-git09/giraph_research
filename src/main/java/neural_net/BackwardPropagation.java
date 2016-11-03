@@ -21,9 +21,9 @@ public class BackwardPropagation extends
         BasicComputation<Text, NeuronValue, DoubleWritable, Text> {
 
     static final int MAX_HIDDEN_LAYER_NUM = 2;                 // minimum value 2
-    static final int INPUT_LAYER_NEURON_COUNT = 7;
-    static final int HIDDEN_LAYER_NEURON_COUNT = 7;
-    static final int OUTPUT_LAYER_NEURON_COUNT = 29;
+    static final int INPUT_LAYER_NEURON_COUNT = 4;
+    static final int HIDDEN_LAYER_NEURON_COUNT = 4;
+    static final int OUTPUT_LAYER_NEURON_COUNT = 3;
 
 //    static final int MAX_HIDDEN_LAYER_NUM = 2;                 // minimum value 2
 //    static final int INPUT_LAYER_NEURON_COUNT = 2;
@@ -34,7 +34,7 @@ public class BackwardPropagation extends
     static final int INPUT_LAYER = 1;
     static final int OUTPUT_LAYER = -1;
     static final String DELIMITER = ":";
-    static final double LEARNING_RATE = 0.05;
+    static final double LEARNING_RATE = 0.1;
 
     public static void main(String[] args) throws Exception {
         System.exit(ToolRunner.run(new GiraphRunner(), args));
@@ -271,7 +271,13 @@ public class BackwardPropagation extends
             System.out.println("\n\n\nACTIVATION ZERO\n\n\n");
             return 0;
         }
-        double fragment = -y * Math.log(activation) + (1 - y) * Math.log(1 - activation);
+        double fragment = y * Math.log(activation) + (1 - y) * Math.log(1 - activation);
+
+        if(fragment > 0) {
+            System.out.printf("negative cost found for vertex: %s \nactivation = %f, cost = %f, y = %d\n",
+                    vertex.getId(), activation, fragment, y);
+        }
+
 //        System.out.printf("y: %d, activation: %f\n", y, activation);
 //        System.out.printf("fragment = %f\n", fragment);
         return fragment;

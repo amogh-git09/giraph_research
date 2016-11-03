@@ -33,7 +33,44 @@ public class NumberOfClasses extends DefaultMasterCompute {
 
     @Override
     public void compute() {
-        if(getSuperstep() > 1000) {
+        if(getSuperstep() > 100) {
+            //print weights
+
+            System.out.println("\n-------- HALT PROCESSING -----------\n\n");
+
+            System.out.println("Weights for input layer\n");
+            for(int j=0; j<=BackwardPropagation.INPUT_LAYER_NEURON_COUNT; j++) {
+                String aggName = GetWeightAggregatorName(1, j);
+                DoubleDenseVector weights = getAggregatedValue(aggName);
+
+                for(int k=1; k<=BackwardPropagation.HIDDEN_LAYER_NEURON_COUNT; k++) {
+                    Double weight = weights.get(k-1);
+                    System.out.printf("%.7f ", weight);
+                }
+                System.out.println("");
+            }
+            System.out.println("");
+
+            for(int i=2; i<=BackwardPropagation.MAX_HIDDEN_LAYER_NUM; i++) {
+                System.out.printf("Weights for layer %d\n\n", i);
+
+                for(int j=0; j<=BackwardPropagation.HIDDEN_LAYER_NEURON_COUNT; j++) {
+                    String aggName = GetWeightAggregatorName(i, j);
+                    DoubleDenseVector weights = getAggregatedValue(aggName);
+
+                    int weightSize = i == BackwardPropagation.MAX_HIDDEN_LAYER_NUM ?
+                            BackwardPropagation.OUTPUT_LAYER_NEURON_COUNT :
+                            BackwardPropagation.HIDDEN_LAYER_NEURON_COUNT;
+
+                    for(int k=1; k<=weightSize; k++) {
+                        Double weight = weights.get(k-1);
+                        System.out.print(weight + " ");
+                    }
+                    System.out.println("");
+                }
+                System.out.println("\n");
+            }
+
             haltComputation();
         }
 
@@ -51,6 +88,9 @@ public class NumberOfClasses extends DefaultMasterCompute {
                     IntWritable m = getAggregatedValue(NUMBER_OF_NETWORKS_ID);
                     double cost = -costWr.get() / m.get();
                     System.out.println("SS: " + getSuperstep() + ", Cost at master = " + cost);
+                    if(cost < 0) {
+                        haltComputation();
+                    }
                 }
                 break;
             case BACKWARD_PROPAGATION_STATE:

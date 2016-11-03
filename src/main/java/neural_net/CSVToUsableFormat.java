@@ -22,22 +22,26 @@ public class CSVToUsableFormat {
             e.printStackTrace();
         }
         int counter = 0;
-        int maxClassCount = 0;
-        int expectedTokenCnt = 9;
+        int minClassCount = 0;
+        int maxClassCount = 2;
+        int expectedTokenCnt = 5;
 
+        //anomaly detection
         try (BufferedReader br = new BufferedReader(new FileReader(inputFileName))) {
             String line;
             while((line = br.readLine()) != null) {
+                if(line.equals("")) continue;
                 String[] tokens = line.split(",");
                 if(tokens.length != expectedTokenCnt) {
-                    throw new IllegalArgumentException("There is an anomalous data sample.");
+                    throw new IllegalArgumentException("Unexpected line: " + line +
+                            "\nThere is an anomalous data sample.");
                 }
 
-                int cls = Integer.parseInt(tokens[tokens.length-1]);
-                if(cls == 0) {
-                    System.out.println("class 0 exists");
-                }
-                maxClassCount = Math.max(maxClassCount, cls);
+//                int cls = Integer.parseInt(tokens[tokens.length-1]);
+//                if(cls == 0) {
+//                    System.out.println("class 0 exists");
+//                }
+//                maxClassCount = Math.max(maxClassCount, cls);
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -49,8 +53,9 @@ public class CSVToUsableFormat {
             try (BufferedReader br = new BufferedReader(new FileReader(inputFileName))) {
                 String line;
                 while((line = br.readLine()) != null) {
+                    if(line.equals("")) continue;
                     counter++;
-                    if(counter >= 5) {
+                    if(counter >= 5000) {
                         System.out.println("breaking");
                         break;
                     }
@@ -61,12 +66,23 @@ public class CSVToUsableFormat {
 
                     String[] tokens = line.split(",");
                     int i;
-                    for(i=1; i<tokens.length-1; i++) {
+                    for(i=0; i<tokens.length-1; i++) {
                         writer.write(tokens[i] + "\n");
                     }
                     writer.write("output\n");
-                    for(int j=1; j<=maxClassCount; j++) {
-                        int cls = Integer.parseInt(tokens[i]);
+                    for(int j=minClassCount; j<=maxClassCount; j++) {
+                        int cls = -1;
+                        switch (tokens[i]) {
+                            case "Iris-setosa":
+                                cls = 0;
+                                break;
+                            case "Iris-versicolor":
+                                cls = 1;
+                                break;
+                            case "Iris-virginica":
+                                cls = 2;
+                                break;
+                        }
                         if(cls == j)
                             writer.write(1 + "\n");
                         else
