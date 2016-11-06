@@ -21,7 +21,9 @@ import java.util.List;
  * Created by amogh-lab on 16/10/10.
  */
 public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, NeuronValue, DoubleWritable> {
-    GiraphTextInputFormat textInputFormat = new GiraphTextInputFormat();
+    GiraphTextInputFormat textInputFormat = new MyGiraphTextInputFormat();
+    Vertex<Text, NeuronValue, DoubleWritable> currentVertex;
+
     static final int OUTPUT_LAYER = -1;
     static final int INPUT_LAYER = 1;
     private int networkNum = 1;
@@ -57,11 +59,10 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
 
         @Override
         public boolean nextVertex() throws IOException, InterruptedException {
-            return lineRecordReader.nextKeyValue();
-        }
+            if(!lineRecordReader.nextKeyValue()) {
+                return false;
+            }
 
-        @Override
-        public Vertex<Text, NeuronValue, DoubleWritable> getCurrentVertex() throws IOException, InterruptedException {
             counter++;
 
             if(counter%1000 == 0) {
@@ -69,6 +70,7 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
             }
 
             Text line = lineRecordReader.getCurrentValue();
+            System.out.println("line: " + line);
 
             if (line.toString().equals("output")) {
                 vertexNum = 1;
@@ -82,14 +84,17 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
 //                lineRecordReader.nextKeyValue();
 //                line = lineRecordReader.getCurrentValue();
                 layerNum = OUTPUT_LAYER;      //output layer
-                return vertex;
+                currentVertex = vertex;
+                return true;
             }
 
             while (line.toString().equals("done")) {
                 networkNum++;
                 vertexNum = 1;
                 layerNum = INPUT_LAYER;
-                lineRecordReader.nextKeyValue();
+                if(!lineRecordReader.nextKeyValue()) {
+                    return false;
+                }
                 line = lineRecordReader.getCurrentValue();
             }
             String data = line.toString();
@@ -106,8 +111,13 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
                 val = new NeuronValue(Double.parseDouble(data), 0d, 0d, 0);
 
             vertex.initialize(id, val);
+            currentVertex = vertex;
+            return true;
+        }
 
-            return vertex;
+        @Override
+        public Vertex<Text, NeuronValue, DoubleWritable> getCurrentVertex() throws IOException, InterruptedException {
+            return currentVertex;
         }
 
         @Override

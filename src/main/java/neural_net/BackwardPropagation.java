@@ -35,7 +35,7 @@ public class BackwardPropagation extends
     static final int OUTPUT_LAYER = -1;
     static final String DELIMITER = ":";
     static final double LEARNING_RATE = 0.1;
-    static final int MAX_ITER = 15000;
+    static final int MAX_ITER = 1500;
 
     public static void main(String[] args) throws Exception {
         System.exit(ToolRunner.run(new GiraphRunner(), args));
