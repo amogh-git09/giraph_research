@@ -12,6 +12,7 @@ public class CSVToUsableFormat {
         String ext = FilenameUtils.getExtension(inputFileName);
         String name = FilenameUtils.getBaseName(inputFileName);
         String outputFileName = name + "_cnv." + ext;
+        int DATA_LIMIT = 50;
         File file = new File(outputFileName);
         PrintWriter writer = null;
         try {
@@ -22,9 +23,10 @@ public class CSVToUsableFormat {
             e.printStackTrace();
         }
         int counter = 0;
-        int minClassCount = 0;
+        int minClassCount = 1;      //0 for flower, 1 for abalone
         int maxClassCount = 2;
-        int expectedTokenCnt = 5;
+        int expectedTokenCnt = 9;   //5 for flower, 9 for abalone
+        int csvOffset = 1;      // 0 for flower, 1 for abalone
 
         //anomaly detection
         try (BufferedReader br = new BufferedReader(new FileReader(inputFileName))) {
@@ -37,11 +39,13 @@ public class CSVToUsableFormat {
                             "\nThere is an anomalous data sample.");
                 }
 
-//                int cls = Integer.parseInt(tokens[tokens.length-1]);
-//                if(cls == 0) {
-//                    System.out.println("class 0 exists");
-//                }
-//                maxClassCount = Math.max(maxClassCount, cls);
+                // if abalone
+                int cls = Integer.parseInt(tokens[tokens.length-1]);
+                if(cls == 0) {
+                    System.out.println("class 0 exists");
+                }
+                maxClassCount = Math.max(maxClassCount, cls);
+                // endif abalone
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -55,7 +59,7 @@ public class CSVToUsableFormat {
                 while((line = br.readLine()) != null) {
                     if(line.equals("")) continue;
                     counter++;
-                    if(counter >= 5000) {
+                    if(counter >= DATA_LIMIT) {
                         System.out.println("breaking");
                         break;
                     }
@@ -66,23 +70,30 @@ public class CSVToUsableFormat {
 
                     String[] tokens = line.split(",");
                     int i;
-                    for(i=0; i<tokens.length-1; i++) {
+
+                    for(i=csvOffset; i<tokens.length-1; i++) {
                         writer.write(tokens[i] + "\n");
                     }
+
                     writer.write("output\n");
                     for(int j=minClassCount; j<=maxClassCount; j++) {
-                        int cls = -1;
-                        switch (tokens[i]) {
-                            case "Iris-setosa":
-                                cls = 0;
-                                break;
-                            case "Iris-versicolor":
-                                cls = 1;
-                                break;
-                            case "Iris-virginica":
-                                cls = 2;
-                                break;
-                        }
+                        //for abalone
+                        int cls = Integer.parseInt(tokens[i]);
+
+                        //for flower
+//                        int cls = -1;
+//                        switch (tokens[i]) {
+//                            case "Iris-setosa":
+//                                cls = 0;
+//                                break;
+//                            case "Iris-versicolor":
+//                                cls = 1;
+//                                break;
+//                            case "Iris-virginica":
+//                                cls = 2;
+//                                break;
+//                        }
+
                         if(cls == j)
                             writer.write(1 + "\n");
                         else

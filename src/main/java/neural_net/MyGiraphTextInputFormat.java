@@ -30,15 +30,19 @@ public class MyGiraphTextInputFormat extends GiraphTextInputFormat {
 
         for (FileStatus file: files) {
             Path path = file.getPath();
-            System.out.println("\n\n\n\npath: " + path + "\n\n\n\n");
+            System.out.println("\n\n\n\npath: " + path);
             FileSystem fs = path.getFileSystem(job.getConfiguration());
             long length = file.getLen();
             BlockLocation[] blkLocations = fs.getFileBlockLocations(file, 0, length);
             if ((length != 0) && isSplitable(job, path)) {
+                System.out.println("Splittable!");
                 long blockSize = file.getBlockSize();
                 long splitSize = computeSplitSize(blockSize, minSize, maxSize);
 
                 long bytesRemaining = length;
+
+                System.out.printf("blockSize = %d, splitSize = %d, bytesRemaining = %d\n", blockSize, splitSize, bytesRemaining);
+
                 while (((double) bytesRemaining) / splitSize > SPLIT_SLOP) {
                     int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
                     splits.add(new FileSplit(path, length - bytesRemaining, splitSize,

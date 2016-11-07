@@ -22,14 +22,8 @@ import java.util.List;
  */
 public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, NeuronValue, DoubleWritable> {
     GiraphTextInputFormat textInputFormat = new MyGiraphTextInputFormat();
-    Vertex<Text, NeuronValue, DoubleWritable> currentVertex;
-
     static final int OUTPUT_LAYER = -1;
     static final int INPUT_LAYER = 1;
-    private int networkNum = 1;
-    private int vertexNum = 1;
-    private int layerNum = 1;
-    private int counter = 0;
 
     @Override
     public VertexReader<Text, NeuronValue, DoubleWritable> createVertexReader(InputSplit split, TaskAttemptContext context) throws IOException {
@@ -50,11 +44,23 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
         private RecordReader<LongWritable, Text> lineRecordReader;
         private TaskAttemptContext context;
 
+        Vertex<Text, NeuronValue, DoubleWritable> currentVertex;
+        private int networkNum;
+        private int vertexNum;
+        private int layerNum;
+        private int counter;
+
         @Override
         public void initialize(InputSplit inputSplit, TaskAttemptContext context) throws IOException, InterruptedException {
             this.context = context;
             lineRecordReader = new LineRecordReader();
             lineRecordReader.initialize(inputSplit, context);
+
+            currentVertex = null;
+            networkNum = 1;
+            vertexNum = 1;
+            layerNum = 1;
+            counter = 0;
         }
 
         @Override
@@ -70,7 +76,6 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
             }
 
             Text line = lineRecordReader.getCurrentValue();
-            System.out.println("line: " + line);
 
             if (line.toString().equals("output")) {
                 vertexNum = 1;
@@ -81,8 +86,6 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
                 NeuronValue val = new NeuronValue(1d, 0d, 0d, 0);
                 vertex.initialize(id, val);
 
-//                lineRecordReader.nextKeyValue();
-//                line = lineRecordReader.getCurrentValue();
                 layerNum = OUTPUT_LAYER;      //output layer
                 currentVertex = vertex;
                 return true;
