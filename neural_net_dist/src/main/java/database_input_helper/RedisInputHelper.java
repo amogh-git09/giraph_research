@@ -5,7 +5,7 @@ import redis.clients.jedis.Jedis;
 
 public class RedisInputHelper {
     final static int featureCount = DistributedNeuralNetwork.INPUT_LAYER_NEURON_COUNT;
-    final static int dataSetSize = 1;
+    final static int dataSetSize = 2;
 
     public static void main(String[] args) {
         Jedis jedis = new Jedis("localhost");

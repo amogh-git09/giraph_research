@@ -23,7 +23,8 @@ public class DistributedNeuralNetwork extends
         BasicComputation<Text, NeuronValue, DoubleWritable, Text> {
 
     private RedisWorkerContext workerContext;
-    public int dataSetNum = 1;
+    public static final int DATA_SIZE = 2;
+    public static final double LEARNING_RATE = 0.1;
 
     public static final int INPUT_LAYER_NEURON_COUNT = 4;
     public static final int INPUT_LAYER = 1;
@@ -49,34 +50,39 @@ public class DistributedNeuralNetwork extends
             workerContext = (RedisWorkerContext) getWorkerContext();
         }
 
-        //generate network
-        if (getSuperstep() == 0) {
-            generateNetwork();
-
-            //switch to forward edges generation stage
-            aggregate(NNMasterCompute.STAGE_AGG_ID, new IntWritable(1));
-            return;
-        }
-
         IntWritable stage = getAggregatedValue(NNMasterCompute.STAGE_AGG_ID);
         String[] tokens = vertex.getId().toString().split(DELIMITER);
         int layerNum = Integer.parseInt(tokens[0]);
         int neuronNum = Integer.parseInt(tokens[1]);
+        IntWritable dataSetIndex = getAggregatedValue(NNMasterCompute.DATA_SET_INDEX_AGG);
+
+        //generate network
+        if (getSuperstep() == 0) {
+            generateNetwork();
+            //switch to stabilizing stage
+            aggregate(NNMasterCompute.STAGE_AGG_ID, new IntWritable(1));
+            return;
+        }
 
         Logger.i(String.format("SS: %d, vertexId: %s, Stage: %s", getSuperstep(),
                 vertex.getId(), NNMasterCompute.idToStage(stage.get())));
 
         switch (stage.get()) {
-            case
+            case NNMasterCompute.STABILIZE_INITIAL_NETWORK:
+                switch (layerNum) {
+                    case INPUT_LAYER:
+                        //switch to next stage
+                        if(neuronNum == 1)
+                            aggregate(NNMasterCompute.STAGE_AGG_ID, new IntWritable(1));
+                        break;
+
+                    default:
+                        vertex.voteToHalt();
+                }
+                break;
 
             case NNMasterCompute.FRONT_EDGES_GENERATION_STAGE:
                 switch (layerNum) {
-                    //generate the output layer
-                    case MAX_HIDDEN_LAYER_NUM:
-                        generateEdgesToALayer(vertex, getNextLayerNum(layerNum), false);
-                        vertex.voteToHalt();
-                        break;
-
                     //switch to back edges generation stage
                     case OUTPUT_LAYER:
                         if (neuronNum == 1) {
@@ -89,7 +95,7 @@ public class DistributedNeuralNetwork extends
 
                     default:
                         //generate next layer's bias unit
-                        if (neuronNum == BIAS_UNIT) {
+                        if (neuronNum == BIAS_UNIT && layerNum != MAX_HIDDEN_LAYER_NUM) {
                             Text id = new Text(getNeuronId(getNextLayerNum(layerNum), BIAS_UNIT));
                             Logger.d("Generating vertex: " + id);
                             addVertexRequest(id, new NeuronValue(1d, 0d, 0d, 0, getNeuronCount(getNextLayerNum(layerNum))));
@@ -97,6 +103,9 @@ public class DistributedNeuralNetwork extends
 
                         // generate the next hidden layer
                         generateEdgesToALayer(vertex, getNextLayerNum(layerNum), false);
+                        // activate next layer
+                        if(neuronNum == 1)
+                            activateLayer(getNextLayerNum(layerNum), true);
                         vertex.voteToHalt();
                 }
                 break;
@@ -131,10 +140,10 @@ public class DistributedNeuralNetwork extends
                 switch (layerNum) {
                     case INPUT_LAYER:
                         if (neuronNum != BIAS_UNIT) {
-                            double input = workerContext.getInputData(dataSetNum, neuronNum);
+                            double input = workerContext.getInputData(dataSetIndex.get(), neuronNum);
                             vertex.getValue().setActivation(input);
+                            Logger.d("Loaded activation: " + vertex.getValue().getActivation());
                         }
-                        Logger.d("Loaded activation: " + vertex.getValue().getActivation());
 
                         //switch stage
                         if (neuronNum == 1)
@@ -143,7 +152,7 @@ public class DistributedNeuralNetwork extends
                         break;
 
                     case OUTPUT_LAYER:
-                        int classFlag = workerContext.getOutputData(dataSetNum, neuronNum);
+                        int classFlag = workerContext.getOutputData(dataSetIndex.get(), neuronNum);
                         vertex.getValue().setClassFlag(classFlag);
                         Logger.d("Loaded classFlag: " + vertex.getValue().getClassFlag());
                         vertex.voteToHalt();
@@ -164,6 +173,9 @@ public class DistributedNeuralNetwork extends
                         break;
 
                     default:
+                        //update weights
+                        updateFrontWeights(vertex, layerNum);
+
                         //forward propagate
                         forwardProp(vertex, layerNum);
                         activateBiasUnitOfNextLayer(layerNum);
@@ -173,6 +185,8 @@ public class DistributedNeuralNetwork extends
                 break;
 
             case NNMasterCompute.BACKWARD_PROPAGATION_STAGE:
+                incrementDataSetIndex(neuronNum, layerNum, dataSetIndex.get());
+
                 switch (layerNum) {
                     case INPUT_LAYER:
                         //calculate derivatives
@@ -209,7 +223,7 @@ public class DistributedNeuralNetwork extends
             int i = l == INPUT_LAYER ? 1 : 0;
             for (; i <= neuronCount; i++) {
                 Text destVertexID = new Text(getNeuronId(l, i));
-                NeuronValue nVal = new NeuronValue(0d, 0d, 0d, 0, getNeuronCount(getNextLayerNum(l)));
+                NeuronValue nVal = new NeuronValue(i == 0 ? 1d : 0d, 0d, 0d, 0, getNeuronCount(getNextLayerNum(l)));
                 addVertexRequest(destVertexID, nVal);
                 Logger.d("Generating vertex: " + destVertexID);
             }
@@ -346,7 +360,8 @@ public class DistributedNeuralNetwork extends
             double activation = val.getActivation();
             double derivative = activation*senderError;
 
-            Logger.d(String.format("Setting derivatives[%d] = %.8f", senderNeuronNum-1, derivative));
+            Logger.d(String.format("activation: %.10f, senderError: %.10f", activation, senderError));
+            Logger.d(String.format("Setting derivatives[%d] = %.15f", senderNeuronNum-1, derivative));
             val.updateDerivative(senderNeuronNum - 1, derivative);
         }
     }
@@ -362,9 +377,48 @@ public class DistributedNeuralNetwork extends
             String msg = String.format("%s%s%s%s%s", neuronNum, DELIMITER,
                     error.toString(), DELIMITER, fragment.toString());
             sendMessage(e.getTargetVertexId(), new Text(msg));
-            Logger.d(String.format("Weight: %f, Error: %f, fragment: %.8f", weight, error, weight*error));
+            Logger.d(String.format("Weight: %f, Error: %f, fragment: %.15f", weight, error, weight*error));
             Logger.d(String.format("Sending message from %s to %s: %s",
                     vertex.getId(), e.getTargetVertexId(), msg));
+        }
+    }
+
+    private void updateFrontWeights(Vertex<Text, NeuronValue, DoubleWritable> vertex, int layerNum) {
+        IntWritable dataSetIndex = getAggregatedValue(NNMasterCompute.DATA_SET_INDEX_AGG);
+        Logger.d("UpdateFrontWeights, dataSetIndex = " + dataSetIndex.get());
+        if(dataSetIndex.get() != 1)
+            return;
+
+        for(Edge<Text, DoubleWritable> e : vertex.getMutableEdges()) {
+            if(!isAnEdgeToNextLayer(e, layerNum))
+                continue;
+
+            String[] tokens = e.getTargetVertexId().toString().split(DELIMITER);
+            int targetNeuronNum = Integer.parseInt(tokens[1]);
+            double derivative = vertex.getValue().getDerivative(targetNeuronNum - 1) / DATA_SIZE;
+            updateWeight(vertex, e, derivative, LEARNING_RATE);
+        }
+    }
+
+    private void updateWeight(Vertex<Text, NeuronValue, DoubleWritable> vertex,
+                              Edge<Text, DoubleWritable> e, double derivative, double learningRate) {
+
+        double weight = e.getValue().get();
+        double update = learningRate * derivative;
+        e.getValue().set(weight - update);
+        Logger.d(String.format("Updated weight %s to %s, from %.15f to %.15f. Derivative = %.15f",
+                vertex.getId().toString(), e.getTargetVertexId().toString(),
+                weight, e.getValue().get(), derivative));
+    }
+
+    private void incrementDataSetIndex(int neuronNum, int layerNum, int currentIndex) {
+        if(neuronNum == 1 && layerNum == OUTPUT_LAYER) {
+            if(currentIndex == DATA_SIZE){
+                // set to 1
+                aggregate(NNMasterCompute.DATA_SET_INDEX_AGG, new IntWritable(-DATA_SIZE));
+            }
+
+            aggregate(NNMasterCompute.DATA_SET_INDEX_AGG, new IntWritable(1));
         }
     }
 

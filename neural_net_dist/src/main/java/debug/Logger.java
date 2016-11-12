@@ -15,7 +15,7 @@ public class Logger {
 
     public static void i(String msg) {
         if(INFO) {
-            System.out.println("INFO: " + msg);
+            System.out.println("\nINFO: " + msg);
         }
     }
 }

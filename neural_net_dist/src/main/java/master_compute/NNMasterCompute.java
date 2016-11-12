@@ -3,20 +3,23 @@ package master_compute;
 import org.apache.giraph.aggregators.IntOverwriteAggregator;
 import org.apache.giraph.aggregators.IntSumAggregator;
 import org.apache.giraph.master.DefaultMasterCompute;
+import org.apache.hadoop.io.IntWritable;
 
 /**
  * Created by amogh-lab on 16/11/09.
  */
 public class NNMasterCompute extends DefaultMasterCompute {
     //STAGES
-    public static final int FRONT_EDGES_GENERATION_STAGE = 1;
-    public static final int BACK_EDGES_GENERATION_STAGE = 2;
-    public static final int  DATA_LOAD_STAGE = 3;
-    public static final int FORWARD_PROPAGATION_STAGE = 4;
-    public static final int BACKWARD_PROPAGATION_STAGE = 5;
+    public static final int STABILIZE_INITIAL_NETWORK = 1;
+    public static final int FRONT_EDGES_GENERATION_STAGE = 2;
+    public static final int BACK_EDGES_GENERATION_STAGE = 3;
+    public static final int  DATA_LOAD_STAGE = 4;
+    public static final int FORWARD_PROPAGATION_STAGE = 5;
+    public static final int BACKWARD_PROPAGATION_STAGE = 6;
 
     public static final String STAGE_AGG_ID = "StageAggregator";
-    public static final int MAX_ITER = 20;
+    public static final String DATA_SET_INDEX_AGG = "DataSetIndex";
+    public static final int MAX_ITER = 35;
 
     @Override
     public void compute() {
@@ -27,6 +30,8 @@ public class NNMasterCompute extends DefaultMasterCompute {
     @Override
     public void initialize() throws InstantiationException, IllegalAccessException {
         registerPersistentAggregator(STAGE_AGG_ID, IntSumAggregator.class);
+        registerPersistentAggregator(DATA_SET_INDEX_AGG, IntSumAggregator.class);
+        setAggregatedValue(DATA_SET_INDEX_AGG, new IntWritable(1));
     }
 
     public static String idToStage(int id) {
@@ -41,6 +46,8 @@ public class NNMasterCompute extends DefaultMasterCompute {
                 return "FORWARD PROPAGATION STAGE";
             case BACKWARD_PROPAGATION_STAGE:
                 return "BACKWARD PROPAGATION STAGE";
+            case STABILIZE_INITIAL_NETWORK:
+                return "STABILIZE INITIAL NETWORK";
         }
 
         return "UNKOWN STAGE";

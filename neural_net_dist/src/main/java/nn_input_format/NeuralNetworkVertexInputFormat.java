@@ -75,6 +75,7 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
 
         @Override
         public Vertex<Text, NeuronValue, DoubleWritable> getCurrentVertex() throws IOException, InterruptedException {
+            Logger.d("Returning initialized vertex, derivatives size = " + currentVertex.getValue().getDerivativesLength());
             return currentVertex;
         }
 
