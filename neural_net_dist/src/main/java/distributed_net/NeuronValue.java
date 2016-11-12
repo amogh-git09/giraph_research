@@ -1,5 +1,7 @@
 package distributed_net;
 
+import debug.Logger;
+import org.apache.giraph.aggregators.matrix.dense.DoubleDenseVector;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
@@ -8,26 +10,34 @@ import org.apache.hadoop.io.WritableComparable;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  * Created by amogh-lab on 16/10/25.
  */
 public class NeuronValue implements WritableComparable {
-    private BooleanWritable isRealNeuron = new BooleanWritable(true);
     private DoubleWritable activation = new DoubleWritable(0.0D);
     private DoubleWritable weightedInput = new DoubleWritable(0.0D);
     private DoubleWritable error = new DoubleWritable(0.0D);
     private IntWritable classFlag = new IntWritable(0);
+    private DoubleWritable[] derivatives = new DoubleWritable[0];
 
     public NeuronValue() {
-
+        for(int i=0; i<derivatives.length; i++) {
+            derivatives[i] = new DoubleWritable(0);
+        }
     }
 
-    public NeuronValue(Double a, Double w, Double e, int f) {
+    public NeuronValue(Double a, Double w, Double e, int f, int nextLayerNeuronCount) {
         activation = new DoubleWritable(a);
         weightedInput = new DoubleWritable(w);
         error = new DoubleWritable(e);
         classFlag = new IntWritable(f);
+        derivatives = new DoubleWritable[nextLayerNeuronCount];
+
+        for(int i=0; i<nextLayerNeuronCount; i++) {
+            derivatives[i] = new DoubleWritable(0);
+        }
     }
 
     public double getActivation() {
@@ -62,6 +72,15 @@ public class NeuronValue implements WritableComparable {
         error.set(e);
     }
 
+    public void updateDerivative(int index, double val) {
+        double old = derivatives[index].get();
+        derivatives[index].set(old + val);
+    }
+
+    public int getDerivativesLength() {
+        return derivatives.length;
+    }
+
     @Override
     public int compareTo(Object o) {
         NeuronValue other = (NeuronValue) o;
@@ -74,6 +93,9 @@ public class NeuronValue implements WritableComparable {
         weightedInput.write(dataOutput);
         error.write(dataOutput);
         classFlag.write(dataOutput);
+        for(int i=0; i<derivatives.length; i++) {
+//            derivatives[i].write(dataOutput);
+        }
     }
 
     @Override
@@ -82,5 +104,8 @@ public class NeuronValue implements WritableComparable {
         weightedInput.readFields(dataInput);
         error.readFields(dataInput);
         classFlag.readFields(dataInput);
+        for(int i=0; i<derivatives.length; i++) {
+//            derivatives[i].readFields(dataInput);
+        }
     }
 }

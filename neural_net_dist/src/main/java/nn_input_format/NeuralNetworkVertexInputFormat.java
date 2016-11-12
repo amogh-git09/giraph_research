@@ -1,5 +1,7 @@
 package nn_input_format;
 
+import debug.Logger;
+import distributed_net.DistributedNeuralNetwork;
 import distributed_net.NeuronValue;
 import org.apache.giraph.graph.Vertex;
 import org.apache.giraph.io.VertexInputFormat;
@@ -60,8 +62,11 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
             String data = line.toString();
 
             Vertex<Text, NeuronValue, DoubleWritable> vertex = getConf().createVertex();
-            Text id = new Text(1 + ":" + 0);
-            NeuronValue val = new NeuronValue(Double.parseDouble(data), 0d, 0d, 0);
+            Text id = new Text(1 + DistributedNeuralNetwork.DELIMITER + 0);
+            int nextLayerNeuronCount = DistributedNeuralNetwork.getNeuronCount(
+                    DistributedNeuralNetwork.getNextLayerNum(DistributedNeuralNetwork.INPUT_LAYER));
+            Logger.d("First neuron, derivatives size = " + nextLayerNeuronCount);
+            NeuronValue val = new NeuronValue(Double.parseDouble(data), 0d, 0d, 0, nextLayerNeuronCount);
 
             vertex.initialize(id, val);
             currentVertex = vertex;
