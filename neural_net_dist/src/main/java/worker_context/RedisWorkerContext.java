@@ -1,5 +1,6 @@
 package worker_context;
 
+import org.apache.commons.beanutils.converters.IntegerConverter;
 import org.apache.giraph.worker.WorkerContext;
 import redis.clients.jedis.Jedis;
 
@@ -37,9 +38,16 @@ public class RedisWorkerContext extends WorkerContext {
 
     }
 
-    public double getInput(String key) {
+    public double getInputData(int dataNum, int featureNum) {
+        String key = dataNum + ":" + "i" + ":" + featureNum;
         String val = jedis.get(key);
         return Double.parseDouble(val);
+    }
+
+    public int getOutputData(int dataNum, int classNum) {
+        String key = dataNum + ":o";
+        String val = jedis.get(key);
+        return Integer.parseInt(val) == classNum ? 1 : 0;
     }
 
     public double getRandomWeight() {
