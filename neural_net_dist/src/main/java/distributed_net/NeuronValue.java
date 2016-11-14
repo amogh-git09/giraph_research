@@ -1,5 +1,6 @@
 package distributed_net;
 
+import debug.Logger;
 import org.apache.giraph.utils.ArrayWritable;
 import org.apache.hadoop.io.*;
 
@@ -74,6 +75,19 @@ public class NeuronValue implements WritableComparable {
 
     public int getDerivativesLength() {
         return derivatives.get().length;
+    }
+
+    public void flushDerivatives() {
+        for(int i=0; i<derivatives.get().length; i++) {
+            derivatives.get()[i].set(0);
+        }
+    }
+
+    public void printDerivatives() {
+        for(int i=0; i<derivatives.get().length; i++) {
+            Logger.d(String.format("derivatives[%d] = %.15f",
+                    i, derivatives.get()[i].get()));
+        }
     }
 
     public double getDerivative(int index) {

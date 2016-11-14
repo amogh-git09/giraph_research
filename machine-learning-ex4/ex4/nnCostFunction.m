@@ -65,13 +65,6 @@ Theta2_grad = zeros(size(Theta2));
 K = num_labels;
 Y = y;
 
-% y
-% K
-% X
-% Y
-% Theta1
-% Theta2
-
 a1 = [ones(m, 1), X];
 z2 = a1 * Theta1';
 a2 = sigmoid(z2);
@@ -112,8 +105,8 @@ for t = 1:m
 	Delta1 += (d2 * a1');
 endfor
 
-% Delta1
-% Delta2
+Delta1;
+Delta2;
 
 % Step 5 - Normal Gradient
 Theta1_grad = (1 / m) * Delta1;

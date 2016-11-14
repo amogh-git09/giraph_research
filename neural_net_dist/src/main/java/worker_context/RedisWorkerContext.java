@@ -41,6 +41,7 @@ public class RedisWorkerContext extends WorkerContext {
 
     public double getInputData(int dataNum, int featureNum) {
         String key = dataNum + ":" + "i" + ":" + featureNum;
+        Logger.d("Getting input for key: " + key);
         String val = jedis.get(key);
         return Double.parseDouble(val);
     }

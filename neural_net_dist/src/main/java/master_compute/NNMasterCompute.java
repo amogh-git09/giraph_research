@@ -1,8 +1,12 @@
 package master_compute;
 
+import debug.Logger;
+import distributed_net.DistributedNeuralNetwork;
+import org.apache.giraph.aggregators.DoubleSumAggregator;
 import org.apache.giraph.aggregators.IntOverwriteAggregator;
 import org.apache.giraph.aggregators.IntSumAggregator;
 import org.apache.giraph.master.DefaultMasterCompute;
+import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 
 /**
@@ -19,7 +23,8 @@ public class NNMasterCompute extends DefaultMasterCompute {
 
     public static final String STAGE_AGG_ID = "StageAggregator";
     public static final String DATA_SET_INDEX_AGG = "DataSetIndex";
-    public static final int MAX_ITER = 35;
+    public static final String COST_AGGREGATOR = "costAggregator";
+    public static final int MAX_ITER = 10000;
 
     @Override
     public void compute() {
@@ -31,6 +36,7 @@ public class NNMasterCompute extends DefaultMasterCompute {
     public void initialize() throws InstantiationException, IllegalAccessException {
         registerPersistentAggregator(STAGE_AGG_ID, IntSumAggregator.class);
         registerPersistentAggregator(DATA_SET_INDEX_AGG, IntSumAggregator.class);
+        registerPersistentAggregator(COST_AGGREGATOR, DoubleSumAggregator.class);
         setAggregatedValue(DATA_SET_INDEX_AGG, new IntWritable(1));
     }
 
