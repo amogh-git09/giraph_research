@@ -24,7 +24,7 @@ public class NNMasterCompute extends DefaultMasterCompute {
     public static final String STAGE_AGG_ID = "StageAggregator";
     public static final String DATA_SET_INDEX_AGG = "DataSetIndex";
     public static final String COST_AGGREGATOR = "costAggregator";
-    public static final int MAX_ITER = 10000;
+    public static final int MAX_ITER = 10000000;
 
     @Override
     public void compute() {

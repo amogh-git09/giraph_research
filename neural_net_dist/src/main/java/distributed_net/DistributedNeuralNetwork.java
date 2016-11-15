@@ -24,13 +24,13 @@ public class DistributedNeuralNetwork extends
         BasicComputation<Text, NeuronValue, DoubleWritable, Text> {
 
     private RedisWorkerContext workerContext;
-    public static final int DATA_SIZE = 1;
+    public static final int DATA_SIZE = 150;
     public static final double LEARNING_RATE = 0.05;
 
-    public static final int INPUT_LAYER_NEURON_COUNT = 2;
-    public static final int OUTPUT_LAYER_NEURON_COUNT = 1;
+    public static final int INPUT_LAYER_NEURON_COUNT = 4;
+    public static final int OUTPUT_LAYER_NEURON_COUNT = 3;
     private static final int[] LAYER_TO_NEURON = {
-            INPUT_LAYER_NEURON_COUNT, 2, OUTPUT_LAYER_NEURON_COUNT};
+            INPUT_LAYER_NEURON_COUNT, 4, OUTPUT_LAYER_NEURON_COUNT};
 
     public static final int MAX_HIDDEN_LAYER_NUM = 2;
     public static final int INPUT_LAYER = 1;
@@ -272,63 +272,63 @@ public class DistributedNeuralNetwork extends
 
             Double weight = workerContext.getRandomWeight();
 
-            int layerNum = Integer.parseInt(vertex.getId().toString().split(DELIMITER)[0]);
-            int neuronNum = Integer.parseInt(vertex.getId().toString().split(DELIMITER)[1]);
-
-            switch (layerNum) {
-                case INPUT_LAYER:
-                switch (neuronNum) {
-                    case 0:
-                        switch (i) {
-                            case 1:
-                                weight = -0.051;
-                                break;
-                            case 2:
-                                weight = 0.002;
-                                break;
-                        }
-                        break;
-
-                    case 1:
-                        switch (i) {
-                            case 1:
-                                weight = 0.003;
-                                break;
-                            case 2:
-                                weight = 0.016;
-                                break;
-                        }
-                        break;
-
-                    case 2:
-                        switch (i) {
-                            case 1:
-                                weight = 0.071;
-                                break;
-                            case 2:
-                                weight = 0.049;
-                                break;
-                        }
-                        break;
-                }
-                break;
-
-                case 2:
-                    switch (neuronNum) {
-                        case 0:
-                            weight = 0.012;
-                            break;
-
-                        case 1:
-                            weight = -0.163;
-                            break;
-
-                        case 2:
-                            weight = 0.058;
-                            break;
-                    }
-                    break;
-            }
+//            int layerNum = Integer.parseInt(vertex.getId().toString().split(DELIMITER)[0]);
+//            int neuronNum = Integer.parseInt(vertex.getId().toString().split(DELIMITER)[1]);
+//
+//            switch (layerNum) {
+//                case INPUT_LAYER:
+//                switch (neuronNum) {
+//                    case 0:
+//                        switch (i) {
+//                            case 1:
+//                                weight = -0.051;
+//                                break;
+//                            case 2:
+//                                weight = 0.002;
+//                                break;
+//                        }
+//                        break;
+//
+//                    case 1:
+//                        switch (i) {
+//                            case 1:
+//                                weight = 0.003;
+//                                break;
+//                            case 2:
+//                                weight = 0.016;
+//                                break;
+//                        }
+//                        break;
+//
+//                    case 2:
+//                        switch (i) {
+//                            case 1:
+//                                weight = 0.071;
+//                                break;
+//                            case 2:
+//                                weight = 0.049;
+//                                break;
+//                        }
+//                        break;
+//                }
+//                break;
+//
+//                case 2:
+//                    switch (neuronNum) {
+//                        case 0:
+//                            weight = 0.012;
+//                            break;
+//
+//                        case 1:
+//                            weight = -0.163;
+//                            break;
+//
+//                        case 2:
+//                            weight = 0.058;
+//                            break;
+//                    }
+//                    break;
+//            }
 
 
             Text dstId = new Text(getNeuronId(targetLayerNum, i));

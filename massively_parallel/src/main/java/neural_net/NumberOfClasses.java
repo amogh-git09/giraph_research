@@ -33,17 +33,17 @@ public class NumberOfClasses extends DefaultMasterCompute {
 
     @Override
     public void compute() {
-        if(getSuperstep() > BackPropWorkerContext.MAX_ITER) {
+        if(getSuperstep() > BackwardPropagation.MAX_ITER) {
             //print weights
 
             System.out.println("\n-------- HALT PROCESSING -----------\n\n");
 
             System.out.println("Weights for input layer\n");
-            for(int j=0; j<=BackPropWorkerContext.INPUT_LAYER_NEURON_COUNT; j++) {
+            for(int j=0; j<=BackwardPropagation.INPUT_LAYER_NEURON_COUNT; j++) {
                 String aggName = GetWeightAggregatorName(1, j);
                 DoubleDenseVector weights = getAggregatedValue(aggName);
 
-                for(int k=1; k<=BackPropWorkerContext.HIDDEN_LAYER_NEURON_COUNT; k++) {
+                for(int k=1; k<=BackwardPropagation.HIDDEN_LAYER_NEURON_COUNT; k++) {
                     Double weight = weights.get(k-1);
                     System.out.printf("%.7f ", weight);
                 }
@@ -51,16 +51,16 @@ public class NumberOfClasses extends DefaultMasterCompute {
             }
             System.out.println("");
 
-            for(int i=2; i<=BackPropWorkerContext.MAX_HIDDEN_LAYER_NUM; i++) {
+            for(int i=2; i<=BackwardPropagation.MAX_HIDDEN_LAYER_NUM; i++) {
                 System.out.printf("Weights for layer %d\n\n", i);
 
-                for(int j=0; j<=BackPropWorkerContext.HIDDEN_LAYER_NEURON_COUNT; j++) {
+                for(int j=0; j<=BackwardPropagation.HIDDEN_LAYER_NEURON_COUNT; j++) {
                     String aggName = GetWeightAggregatorName(i, j);
                     DoubleDenseVector weights = getAggregatedValue(aggName);
 
-                    int weightSize = i == BackPropWorkerContext.MAX_HIDDEN_LAYER_NUM ?
-                            BackPropWorkerContext.OUTPUT_LAYER_NEURON_COUNT :
-                            BackPropWorkerContext.HIDDEN_LAYER_NEURON_COUNT;
+                    int weightSize = i == BackwardPropagation.MAX_HIDDEN_LAYER_NUM ?
+                            BackwardPropagation.OUTPUT_LAYER_NEURON_COUNT :
+                            BackwardPropagation.HIDDEN_LAYER_NEURON_COUNT;
 
                     for(int k=1; k<=weightSize; k++) {
                         Double weight = weights.get(k-1);
@@ -96,11 +96,11 @@ public class NumberOfClasses extends DefaultMasterCompute {
             case BACKWARD_PROPAGATION_STATE:
 //                System.out.println("  BACKWARD PROPAGATION STAGE");
 
-//                for(int l = 1; l<=BackPropWorkerContext.MAX_HIDDEN_LAYER_NUM; l++) {
+//                for(int l = 1; l<=BackwardPropagation.MAX_HIDDEN_LAYER_NUM; l++) {
 //                    String aggName = GetErrorAggregatorName(l, 1);
 //                    System.out.println("The error vector for '" + aggName + "' is ");
 //                    DoubleDenseVector vec = getAggregatedValue(aggName);
-//                    for(int i=0; i<BackPropWorkerContext.HIDDEN_LAYER_NEURON_COUNT; i++) {
+//                    for(int i=0; i<BackwardPropagation.HIDDEN_LAYER_NEURON_COUNT; i++) {
 //                        System.out.print(vec.get(i) + "  ");
 //                    }
 //                    System.out.println("");
@@ -117,15 +117,15 @@ public class NumberOfClasses extends DefaultMasterCompute {
         registerPersistentAggregator(STATE_ID, IntOverwriteAggregator.class);
         registerPersistentAggregator(NUMBER_OF_NETWORKS_ID, IntMaxAggregator.class);
         registerPersistentAggregator(COST_AGGREGATOR, DoubleSumAggregator.class);
-        registerWeightAggregators(BackPropWorkerContext.MAX_HIDDEN_LAYER_NUM,
-                BackPropWorkerContext.INPUT_LAYER_NEURON_COUNT, BackPropWorkerContext.HIDDEN_LAYER_NEURON_COUNT);
-        registerErrorAggregators(BackPropWorkerContext.MAX_HIDDEN_LAYER_NUM,
-                BackPropWorkerContext.INPUT_LAYER_NEURON_COUNT, BackPropWorkerContext.HIDDEN_LAYER_NEURON_COUNT);
+        registerWeightAggregators(BackwardPropagation.MAX_HIDDEN_LAYER_NUM,
+                BackwardPropagation.INPUT_LAYER_NEURON_COUNT, BackwardPropagation.HIDDEN_LAYER_NEURON_COUNT);
+        registerErrorAggregators(BackwardPropagation.MAX_HIDDEN_LAYER_NUM,
+                BackwardPropagation.INPUT_LAYER_NEURON_COUNT, BackwardPropagation.HIDDEN_LAYER_NEURON_COUNT);
 
-        initializeLayerWeightAggs(BackPropWorkerContext.MAX_HIDDEN_LAYER_NUM,
-                BackPropWorkerContext.INPUT_LAYER_NEURON_COUNT,
-                BackPropWorkerContext.HIDDEN_LAYER_NEURON_COUNT,
-                BackPropWorkerContext.OUTPUT_LAYER_NEURON_COUNT);
+        initializeLayerWeightAggs(BackwardPropagation.MAX_HIDDEN_LAYER_NUM,
+                BackwardPropagation.INPUT_LAYER_NEURON_COUNT,
+                BackwardPropagation.HIDDEN_LAYER_NEURON_COUNT,
+                BackwardPropagation.OUTPUT_LAYER_NEURON_COUNT);
         setAggregatedValue(STATE_ID, new IntWritable(HIDDEN_LAYER_GENERATION_STATE));
     }
 
