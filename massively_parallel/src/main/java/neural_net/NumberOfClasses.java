@@ -3,6 +3,7 @@ package neural_net;
 import org.apache.giraph.aggregators.DoubleSumAggregator;
 import org.apache.giraph.aggregators.IntMaxAggregator;
 import org.apache.giraph.aggregators.IntOverwriteAggregator;
+import org.apache.giraph.aggregators.IntSumAggregator;
 import org.apache.giraph.aggregators.matrix.dense.DoubleDenseVector;
 import org.apache.giraph.aggregators.matrix.dense.DoubleDenseVectorSumAggregator;
 import org.apache.giraph.master.DefaultMasterCompute;
@@ -26,6 +27,7 @@ public class NumberOfClasses extends DefaultMasterCompute {
     public static final String ERROR_AGGREGATOR_PREFIX = "errorAggregator";
     public static final String STATE_ID = "StateAggregator";
     public static final String NUMBER_OF_NETWORKS_ID = "NumberOfNetworksAggregator";
+    public static final String ITERATIONS_ID = "IterationsAgg";
     public static final double EPSILON = 0.5;
     public static final Random random = new Random();
 
@@ -62,34 +64,19 @@ public class NumberOfClasses extends DefaultMasterCompute {
         registerPersistentAggregator(STATE_ID, IntOverwriteAggregator.class);
         registerPersistentAggregator(NUMBER_OF_NETWORKS_ID, IntMaxAggregator.class);
         registerPersistentAggregator(COST_AGGREGATOR, DoubleSumAggregator.class);
-        registerWeightAggregators(Config.MAX_HIDDEN_LAYER_NUM,
-                Config.INPUT_LAYER_NEURON_COUNT, Config.HIDDEN_LAYER_NEURON_COUNT);
-        registerErrorAggregators(Config.MAX_HIDDEN_LAYER_NUM,
-                Config.INPUT_LAYER_NEURON_COUNT, Config.HIDDEN_LAYER_NEURON_COUNT);
+        registerPersistentAggregator(ITERATIONS_ID, IntSumAggregator.class);
+        registerWeightAggregators();
+        registerErrorAggregators();
 
-        initializeLayerWeightAggs(Config.MAX_HIDDEN_LAYER_NUM,
-                Config.INPUT_LAYER_NEURON_COUNT,
-                Config.HIDDEN_LAYER_NEURON_COUNT,
-                Config.OUTPUT_LAYER_NEURON_COUNT);
+        initializeLayerWeightAggs();
         setAggregatedValue(STATE_ID, new IntWritable(HIDDEN_LAYER_GENERATION_STATE));
     }
 
-    private void initializeLayerWeightAggs(int finalHiddenLayerNum,
-                                           int inputLayerNeuronCount,
-                                           int hiddenLayerNeuronCount,
-                                           int outputLayerNeuronCount) {
-
-        //input layer
-        initializeLayerWeightAgg(NeuralNetworkVertexInputFormat.INPUT_LAYER,
-                inputLayerNeuronCount, hiddenLayerNeuronCount);
-
-        //hidden layers
-        for (int i = 2; i < finalHiddenLayerNum; i++) {
-            initializeLayerWeightAgg(i, hiddenLayerNeuronCount, hiddenLayerNeuronCount);
+    private void initializeLayerWeightAggs() {
+        for(int i = Config.INPUT_LAYER; i <= Config.MAX_HIDDEN_LAYER_NUM; i++) {
+            initializeLayerWeightAgg(i, BackwardPropagation.getNeuronCountByLayer(i),
+                    BackwardPropagation.getNextLayerNeuronCount(i));
         }
-
-        //output layer
-        initializeLayerWeightAgg(finalHiddenLayerNum, hiddenLayerNeuronCount, outputLayerNeuronCount);
     }
 
     private void initializeLayerWeightAgg(int layerNum, int neuronCount, int numOfOutgoingEdges) {
@@ -114,15 +101,11 @@ public class NumberOfClasses extends DefaultMasterCompute {
         return String.format("%s:%d:%d", WEIGHT_AGGREGATOR_PREFIX, layerNum, neuronNum);
     }
 
-    private void registerWeightAggregators(int finalHiddenLayerNum,
-                                           int inputLayerNeuronCount,
-                                           int hiddenLayerNeuronCount)
+    private void registerWeightAggregators()
             throws InstantiationException, IllegalAccessException {
 
-        registerLayerWeightAgg(NeuralNetworkVertexInputFormat.INPUT_LAYER, inputLayerNeuronCount);
-
-        for (int i = 2; i <= finalHiddenLayerNum; i++) {
-            registerLayerWeightAgg(i, hiddenLayerNeuronCount);
+        for(int i = Config.INPUT_LAYER; i <= Config.MAX_HIDDEN_LAYER_NUM; i++) {
+            registerLayerWeightAgg(i, BackwardPropagation.getNextLayerNeuronCount(i));
         }
     }
 
@@ -139,15 +122,11 @@ public class NumberOfClasses extends DefaultMasterCompute {
         return String.format("%s:%d:%d", ERROR_AGGREGATOR_PREFIX, layerNum, neuronNum);
     }
 
-    private void registerErrorAggregators(int finalHiddenLayerNum,
-                                          int inputLayerNeuronCount,
-                                          int hiddenLayerNeuronCount)
+    private void registerErrorAggregators()
             throws InstantiationException, IllegalAccessException {
 
-        registerErrorAgg(NeuralNetworkVertexInputFormat.INPUT_LAYER, inputLayerNeuronCount);
-
-        for (int i = 2; i <= finalHiddenLayerNum; i++) {
-            registerErrorAgg(i, hiddenLayerNeuronCount);
+        for(int i = Config.INPUT_LAYER; i <= Config.MAX_HIDDEN_LAYER_NUM; i++) {
+            registerErrorAgg(i, BackwardPropagation.getNextLayerNeuronCount(i));
         }
     }
 
@@ -169,28 +148,14 @@ public class NumberOfClasses extends DefaultMasterCompute {
         //print weights
         System.out.println("\n-------- HALT PROCESSING -----------\n\n");
         System.out.println("Weights for input layer\n");
-        for (int j = 0; j <= Config.INPUT_LAYER_NEURON_COUNT; j++) {
-            String aggName = GetWeightAggregatorName(1, j);
-            DoubleDenseVector weights = getAggregatedValue(aggName);
 
-            for (int k = 1; k <= Config.HIDDEN_LAYER_NEURON_COUNT; k++) {
-                Double weight = weights.get(k - 1);
-                System.out.printf("%.7f ", weight);
-            }
-            System.out.println("");
-        }
-        System.out.println("");
-
-        for (int i = 2; i <= Config.MAX_HIDDEN_LAYER_NUM; i++) {
-            System.out.printf("Weights for layer %d\n\n", i);
-            for (int j = 0; j <= Config.HIDDEN_LAYER_NEURON_COUNT; j++) {
+        for (int i = Config.INPUT_LAYER; i <= Config.MAX_HIDDEN_LAYER_NUM; i++) {
+            for(int j = 0; j <= BackwardPropagation.getNeuronCountByLayer(i); j++) {
+                System.out.printf("Weights for layer %d\n", i);
                 String aggName = GetWeightAggregatorName(i, j);
                 DoubleDenseVector weights = getAggregatedValue(aggName);
 
-                int weightSize = i == Config.MAX_HIDDEN_LAYER_NUM ?
-                        Config.OUTPUT_LAYER_NEURON_COUNT :
-                        Config.HIDDEN_LAYER_NEURON_COUNT;
-
+                int weightSize = BackwardPropagation.getNextLayerNeuronCount(i);
                 for (int k = 1; k <= weightSize; k++) {
                     Double weight = weights.get(k - 1);
                     System.out.print(weight + " ");
@@ -202,11 +167,11 @@ public class NumberOfClasses extends DefaultMasterCompute {
     }
 
     private void printErrorVector() {
-        for (int l = 1; l <= Config.MAX_HIDDEN_LAYER_NUM; l++) {
+        for (int l = Config.INPUT_LAYER; l <= Config.MAX_HIDDEN_LAYER_NUM; l++) {
             String aggName = GetErrorAggregatorName(l, 1);
             Logger.d("The error vector for '" + aggName + "' is ");
             DoubleDenseVector vec = getAggregatedValue(aggName);
-            for (int i = 0; i < Config.HIDDEN_LAYER_NEURON_COUNT; i++) {
+            for (int i = 0; i < BackwardPropagation.getNeuronCountByLayer(l); i++) {
                 if (Logger.DEBUG)
                     System.out.print(vec.get(i) + "  ");
             }

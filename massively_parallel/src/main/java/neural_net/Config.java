@@ -15,6 +15,7 @@ public class Config {
     //abalone
     static final int MAX_HIDDEN_LAYER_NUM = 2;                 // minimum value 2
     static final int INPUT_LAYER_NEURON_COUNT = 7;
-    static final int HIDDEN_LAYER_NEURON_COUNT = 7;
     static final int OUTPUT_LAYER_NEURON_COUNT = 29;
+
+    static final int[] LAYER_COUNTS = {INPUT_LAYER_NEURON_COUNT, 7, OUTPUT_LAYER_NEURON_COUNT};
 }

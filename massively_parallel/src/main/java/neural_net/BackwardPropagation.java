@@ -43,64 +43,33 @@ public class BackwardPropagation extends
         }
 
         if (getSuperstep() >= Config.MAX_ITER - Config.MAX_HIDDEN_LAYER_NUM) {
-            //aggregate the weights
-            if (networkNum == 1 && layerNum != Config.OUTPUT_LAYER) {
-                Logger.d("Aggregating weights for vertex " + vertex.getId());
-                String aggName = NumberOfClasses.GetWeightAggregatorName(layerNum, neuronNum);
-                DoubleDenseVector weights = getAggregatedValue(aggName);
-
-                //flush the aggregator
-                int vecSize = layerNum == Config.INPUT_LAYER ? Config.HIDDEN_LAYER_NEURON_COUNT :
-                        Config.OUTPUT_LAYER_NEURON_COUNT;
-                DoubleDenseVector vec = new DoubleDenseVector(vecSize);
-                for (int v = 0; v < vecSize; v++) {
-                    vec.set(v, -weights.get(v));
-                }
-                aggregate(aggName, vec);
-
-                //set latest weights
-                for (Edge<Text, DoubleWritable> e : vertex.getMutableEdges()) {
-                    if (isAnEdgeToNextLayer(e, layerNum)) {
-                        Text dstId = e.getTargetVertexId();
-                        String[] edgeTokens = dstId.toString().split(Config.DELIMITER);
-                        int dstNeuronNum = Integer.parseInt(edgeTokens[2]);
-
-                        Logger.d(String.format("Edge from %s --> %s, weight = %f",
-                                vertex.getId(), dstId.toString(), e.getValue().get()));
-                        vec.set(dstNeuronNum - 1, e.getValue().get());
-                    }
-                }
-
-                aggregate(aggName, vec);
-            }
+            finishComputation(vertex, networkNum, layerNum, neuronNum);
         }
 
         IntWritable state = getAggregatedValue(NumberOfClasses.STATE_ID);
 
         switch (state.get()) {
             case NumberOfClasses.HIDDEN_LAYER_GENERATION_STATE:
-                if (layerNum == Config.MAX_HIDDEN_LAYER_NUM) {
-                    generateEdgesToNextLayer(vertex, networkNum, layerNum, Config.OUTPUT_LAYER,
-                            Config.OUTPUT_LAYER_NEURON_COUNT, neuronNum);
-                } else if (layerNum == Config.OUTPUT_LAYER) {
-                    if (neuronNum == 1) {
-                        turnInputLayerToActive(networkNum);
-                        //aggregate number of networks
-                        aggregate(NumberOfClasses.NUMBER_OF_NETWORKS_ID, new IntWritable(networkNum));
+                switch (layerNum) {
+                    case Config.MAX_HIDDEN_LAYER_NUM:
+                        generateEdgesToNextLayer(vertex, networkNum, layerNum, Config.OUTPUT_LAYER,
+                                Config.OUTPUT_LAYER_NEURON_COUNT, neuronNum);
+                        break;
 
-                        Logger.d("Changing to back edges generation stage");
-                        aggregate(NumberOfClasses.STATE_ID, new IntWritable(NumberOfClasses.BACK_EDGES_GENERATION_STATE));
-                    }
-                } else {
-                    //generate next layer's bias unit
-                    if (neuronNum == Config.BIAS_UNIT && layerNum != Config.MAX_HIDDEN_LAYER_NUM) {
-                        Text id = new Text(networkNum + Config.DELIMITER + (layerNum + 1) + Config.DELIMITER + 0);
-                        Logger.d("Generating bias unit " + id);
-                        sendMessage(id, new Text(""));
-                    }
+                    case Config.OUTPUT_LAYER:
+                        if (neuronNum == 1) {
+                            turnInputLayerToActive(networkNum);
+                            aggregate(NumberOfClasses.NUMBER_OF_NETWORKS_ID, new IntWritable(networkNum));
+                            aggregate(NumberOfClasses.STATE_ID, new IntWritable(NumberOfClasses.BACK_EDGES_GENERATION_STATE));
+                        }
+                        break;
 
-                    generateEdgesToNextLayer(vertex, networkNum, layerNum, layerNum + 1,
-                            Config.HIDDEN_LAYER_NEURON_COUNT, neuronNum);
+                    default:
+                        // generate next layer's bias unit
+                        generateNextLayerBiasUnit(networkNum, layerNum, neuronNum);
+                        // generate edges
+                        generateEdgesToNextLayer(vertex, networkNum, layerNum, getNextLayerNum(layerNum),
+                                getNextLayerNeuronCount(layerNum), neuronNum);
                 }
 
                 vertex.voteToHalt();
@@ -122,7 +91,7 @@ public class BackwardPropagation extends
                     break;
                 } else {
                     generateEdgesFromNextLayer(vertex, networkNum, layerNum, layerNum + 1,
-                            Config.HIDDEN_LAYER_NEURON_COUNT, neuronNum);
+                            getNextLayerNeuronCount(layerNum), neuronNum);
                 }
 
 
@@ -193,7 +162,7 @@ public class BackwardPropagation extends
                     if (layerNum != Config.OUTPUT_LAYER && networkNum == 1) {
                         Logger.d(String.format("flushing error agg for layerNum: %s, neuronNum: %d\n", layerNum, neuronNum));
 
-                        int nextLayerNeuronCount = Config.HIDDEN_LAYER_NEURON_COUNT;
+                        int nextLayerNeuronCount = getNeuronCountByLayer(getNextLayerNum(layerNum));
                         if (layerNum == Config.MAX_HIDDEN_LAYER_NUM)
                             nextLayerNeuronCount = Config.OUTPUT_LAYER_NEURON_COUNT;
 
@@ -204,10 +173,7 @@ public class BackwardPropagation extends
                     double weightedError = 0d;
                     DoubleDenseVector errVector;
 
-                    if (layerNum == Config.MAX_HIDDEN_LAYER_NUM)
-                        errVector = new DoubleDenseVector(Config.OUTPUT_LAYER_NEURON_COUNT);
-                    else
-                        errVector = new DoubleDenseVector(Config.HIDDEN_LAYER_NEURON_COUNT);
+                    errVector = new DoubleDenseVector(getNextLayerNeuronCount(layerNum));
 
                     for (Text m : messages) {
                         String[] msgTokens = m.toString().split(Config.DELIMITER);
@@ -224,11 +190,7 @@ public class BackwardPropagation extends
                     String aggName = NumberOfClasses.GetErrorAggregatorName(layerNum, neuronNum);
                     aggregate(aggName, errVector);
 
-                    int size;
-                    if (layerNum == Config.MAX_HIDDEN_LAYER_NUM)
-                        size = Config.OUTPUT_LAYER_NEURON_COUNT;
-                    else
-                        size = Config.HIDDEN_LAYER_NEURON_COUNT;
+                    int size = getNextLayerNeuronCount(layerNum);
                     Logger.d("errVector : ");
                     for (int i = 0; i < size; i++) {
                         Logger.d(errVector.get(i) + "  ");
@@ -313,8 +275,7 @@ public class BackwardPropagation extends
                 int dstNeuronNum = Integer.parseInt(edgeTokens[2]);
 
                 Logger.d("gradients: ");
-                int nextLayerNeuronCnt = layerNum == Config.MAX_HIDDEN_LAYER_NUM ? Config.OUTPUT_LAYER_NEURON_COUNT : Config.HIDDEN_LAYER_NEURON_COUNT;
-                for (int i = 0; i < nextLayerNeuronCnt; i++) {
+                for (int i = 0; i < getNextLayerNeuronCount(layerNum); i++) {
                     Logger.d(gradients.get(i) + "  ");
                 }
 
@@ -478,5 +439,77 @@ public class BackwardPropagation extends
             Text dstId = new Text(String.format("%d:%d:%d", networkNum, Config.INPUT_LAYER, i));
             sendMessage(dstId, new Text(""));
         }
+    }
+
+    private void finishComputation(Vertex<Text, NeuronValue, DoubleWritable> vertex, int networkNum,
+                                   int layerNum, int neuronNum) {
+        //aggregate the weights
+        if (networkNum == 1 && layerNum != Config.OUTPUT_LAYER) {
+            Logger.d("Aggregating weights for vertex " + vertex.getId());
+            String aggName = NumberOfClasses.GetWeightAggregatorName(layerNum, neuronNum);
+            DoubleDenseVector weights = getAggregatedValue(aggName);
+
+            //flush the aggregator
+            int vecSize = getNextLayerNeuronCount(layerNum);
+            DoubleDenseVector vec = new DoubleDenseVector(vecSize);
+            for (int v = 0; v < vecSize; v++) {
+                vec.set(v, -weights.get(v));
+            }
+            aggregate(aggName, vec);
+
+            //set latest weights
+            for (Edge<Text, DoubleWritable> e : vertex.getMutableEdges()) {
+                if (isAnEdgeToNextLayer(e, layerNum)) {
+                    Text dstId = e.getTargetVertexId();
+                    String[] edgeTokens = dstId.toString().split(Config.DELIMITER);
+                    int dstNeuronNum = Integer.parseInt(edgeTokens[2]);
+
+                    Logger.d(String.format("Edge from %s --> %s, weight = %f",
+                            vertex.getId(), dstId.toString(), e.getValue().get()));
+                    vec.set(dstNeuronNum - 1, e.getValue().get());
+                }
+            }
+
+            aggregate(aggName, vec);
+        }
+    }
+
+    public static int getNextLayerNum(int layerNum) {
+        switch (layerNum) {
+            case Config.OUTPUT_LAYER:
+                return Config.INPUT_LAYER;
+            case Config.MAX_HIDDEN_LAYER_NUM:
+                return Config.OUTPUT_LAYER;
+            default:
+                return layerNum + 1;
+        }
+    }
+
+    public Text getNeuronId(int networkNum, int layerNum, int neuronNum) {
+        String id = String.format("%d%s%d%s%d", networkNum, Config.DELIMITER, getNextLayerNum(layerNum),
+                Config.DELIMITER, neuronNum);
+        return new Text(id);
+    }
+
+    private void generateNextLayerBiasUnit(int networkNum, int layerNum, int neuronNum) {
+        // run only once per network
+        if (neuronNum == Config.BIAS_UNIT && layerNum != Config.MAX_HIDDEN_LAYER_NUM) {
+            Text id = getNeuronId(networkNum, layerNum, Config.BIAS_UNIT);
+            Logger.d("Generating bias unit " + id);
+            sendMessage(id, new Text(""));
+        }
+    }
+
+    public static int getNeuronCountByLayer(int layerNum) {
+        switch (layerNum) {
+            case Config.OUTPUT_LAYER:
+                return Config.LAYER_COUNTS[Config.LAYER_COUNTS.length - 1];
+            default:
+                return Config.LAYER_COUNTS[layerNum - 1];
+        }
+    }
+
+    public static int getNextLayerNeuronCount(int layerNum) {
+        return getNeuronCountByLayer(getNextLayerNum(layerNum));
     }
 }
