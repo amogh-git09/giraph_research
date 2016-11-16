@@ -59,14 +59,14 @@ public class NumberOfClasses extends DefaultMasterCompute {
                 printErrorVector();
                 break;
             default:
-                System.out.println("  UNKNOWN STAGE " + state.get());
+                Logger.d("  UNKNOWN STAGE " + state.get());
         }
     }
 
     @Override
     public void initialize() throws InstantiationException, IllegalAccessException {
         Logger.d("Registering all the aggregators");
-        registerPersistentAggregator(STATE_ID, IntOverwriteAggregator.class);
+        registerPersistentAggregator(STATE_ID, IntSumAggregator.class);
         registerPersistentAggregator(NUMBER_OF_NETWORKS_ID, IntMaxAggregator.class);
         registerPersistentAggregator(COST_AGGREGATOR, DoubleSumAggregator.class);
         registerPersistentAggregator(ITERATIONS_ID, IntSumAggregator.class);
@@ -110,7 +110,7 @@ public class NumberOfClasses extends DefaultMasterCompute {
             throws InstantiationException, IllegalAccessException {
 
         for(int i = Config.INPUT_LAYER; i <= Config.MAX_HIDDEN_LAYER_NUM; i++) {
-            registerLayerWeightAgg(i, BackwardPropagation.getNextLayerNeuronCount(i));
+            registerLayerWeightAgg(i, BackwardPropagation.getNeuronCountByLayer(i));
         }
     }
 

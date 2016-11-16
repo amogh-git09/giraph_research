@@ -4,8 +4,8 @@ package neural_net;
  * Created by amogh-lab on 16/11/09.
  */
 public class Logger {
-    public static boolean DEBUG = false;
-    public static boolean INFO1 = false;
+    public static boolean DEBUG = true;
+    public static boolean INFO1 = true;
     public static boolean INFO2 = true;
 
     public static void d(String msg) {
