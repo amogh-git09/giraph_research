@@ -131,7 +131,7 @@ public class NumberOfClasses extends DefaultMasterCompute {
             throws InstantiationException, IllegalAccessException {
 
         for(int i = Config.INPUT_LAYER; i <= Config.MAX_HIDDEN_LAYER_NUM; i++) {
-            registerErrorAgg(i, BackwardPropagation.getNextLayerNeuronCount(i));
+            registerErrorAgg(i, BackwardPropagation.getNeuronCountByLayer(i));
         }
     }
 
@@ -140,6 +140,7 @@ public class NumberOfClasses extends DefaultMasterCompute {
 
         for (int i = 0; i <= neuronCount; i++) {
             String aggName = GetErrorAggregatorName(layerNum, i);
+            Logger.d("Registering error aggregator: " + aggName);
             registerPersistentAggregator(aggName, DoubleDenseVectorSumAggregator.class);
         }
     }

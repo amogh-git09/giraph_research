@@ -110,6 +110,11 @@ public class BackwardPropagation extends
                             aggregate(NumberOfClasses.ITERATIONS_ID, new IntWritable(1));
                             aggregate(NumberOfClasses.STATE_ID, new IntWritable(1));
                         }
+
+                        // activate input layer
+                        if(neuronNum == 1) {
+                            activateNextLayer(networkNum, layerNum);
+                        }
                         break;
 
                     default:
@@ -168,8 +173,8 @@ public class BackwardPropagation extends
                     vertex.getId(), activation, fragment, y);
         }
 
-        Logger.d(String.format("y: %d, activation: %f\n", y, activation));
-        Logger.d(String.format("fragment = %f\n", fragment));
+        Logger.d(String.format("y: %d, activation: %f", y, activation));
+        Logger.d(String.format("fragment = %f", fragment));
         return fragment;
     }
 
@@ -179,6 +184,7 @@ public class BackwardPropagation extends
 
         IntWritable m = getAggregatedValue(NumberOfClasses.NUMBER_OF_NETWORKS_ID);
         String aggName = NumberOfClasses.GetErrorAggregatorName(layerNum, neuronNum);
+        Logger.d("Getting error aggregator: " + aggName);
         DoubleDenseVector gradients = getAggregatedValue(aggName);
 
         for (Edge<Text, DoubleWritable> e : vertex.getMutableEdges()) {
