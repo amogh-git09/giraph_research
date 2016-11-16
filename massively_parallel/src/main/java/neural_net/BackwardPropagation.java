@@ -76,6 +76,21 @@ public class BackwardPropagation extends
                 break;
 
             case NumberOfClasses.BACK_EDGES_GENERATION_STATE:
+//                switch (layerNum) {
+//                    case Config.OUTPUT_LAYER:
+//                        if (neuronNum == 1) {
+//                            turnInputLayerToActive(networkNum);
+//                            aggregate(NumberOfClasses.STATE_ID, new IntWritable(NumberOfClasses.FORWARD_PROPAGATION_STATE));
+//                        }
+//
+//                        vertex.voteToHalt();
+//                        break;
+//
+//                    default:
+//                        generateEdgesFromNextLayer(vertex, networkNum, layerNum, getNextLayerNum(layerNum),
+//                                getNextLayerNeuronCount(layerNum), neuronNum);
+//                }
+
                 if (layerNum == Config.MAX_HIDDEN_LAYER_NUM) {
                     generateEdgesFromNextLayer(vertex, networkNum, layerNum, Config.OUTPUT_LAYER,
                             Config.OUTPUT_LAYER_NEURON_COUNT, neuronNum);
@@ -128,6 +143,7 @@ public class BackwardPropagation extends
                     if (networkNum == 1 && neuronNum == 1) {
                         DoubleWritable oldCost = getAggregatedValue(NumberOfClasses.COST_AGGREGATOR);
                         aggregate(NumberOfClasses.COST_AGGREGATOR, new DoubleWritable(-oldCost.get()));
+                        aggregate(NumberOfClasses.ITERATIONS_ID, new IntWritable(1));
                     }
 
                     double cost = neuronCost(vertex);

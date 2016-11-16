@@ -31,12 +31,17 @@ public class NumberOfClasses extends DefaultMasterCompute {
     public static final double EPSILON = 0.5;
     public static final Random random = new Random();
 
+    int printCounter = 3;
+
     @Override
     public void compute() {
-        if (getSuperstep() > Config.MAX_ITER) {
+        IntWritable iteration = getAggregatedValue(ITERATIONS_ID);
+        if (iteration.get() > Config.MAX_ITER) {
             printWeights();
             haltComputation();
         }
+
+        printCost();
 
         IntWritable state = getAggregatedValue(STATE_ID);
         switch (state.get()) {
@@ -247,5 +252,18 @@ public class NumberOfClasses extends DefaultMasterCompute {
         }
 
         vector.set(j, initVal);
+    }
+
+    private void printCost() {
+        if(printCounter++ % 3 == 0) {
+            DoubleWritable costWr = getAggregatedValue(COST_AGGREGATOR);
+            IntWritable m = getAggregatedValue(NUMBER_OF_NETWORKS_ID);
+            double cost = -costWr.get() / m.get();
+            IntWritable iteration = getAggregatedValue(ITERATIONS_ID);
+            System.out.println("iteration: " + iteration.get() + ", Cost at master = " + cost);
+            if(cost < 0) {
+                haltComputation();
+            }
+        }
     }
 }
