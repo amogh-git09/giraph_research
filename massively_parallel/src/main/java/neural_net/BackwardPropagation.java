@@ -230,7 +230,6 @@ public class BackwardPropagation extends
                     else
                         size = Config.HIDDEN_LAYER_NEURON_COUNT;
                     Logger.d("errVector : ");
-                    System.out.print("errVector : ");
                     for (int i = 0; i < size; i++) {
                         Logger.d(errVector.get(i) + "  ");
                     }
