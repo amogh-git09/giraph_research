@@ -42,12 +42,14 @@ public class BackwardPropagation extends
         }
 
         IntWritable iteration = getAggregatedValue(NumberOfClasses.ITERATIONS_ID);
-        if (iteration.get() == Config.MAX_ITER) {
+        if (iteration.get() == Config.MAX_ITER - 1) {
             finishComputation(vertex, networkNum, layerNum, neuronNum);
+            aggregate(NumberOfClasses.ITERATIONS_ID, new IntWritable(1));
+            return;
         }
 
         IntWritable state = getAggregatedValue(NumberOfClasses.STATE_ID);
-        Logger.i1("SS: " + getSuperstep() + "  Vertex ID: " + vertex.getId() + ", Stage: " + state.get());
+//        Logger.i("SS: " + getSuperstep() + "  Vertex ID: " + vertex.getId() + ", Stage: " + state.get());
 
         switch (state.get()) {
             case NumberOfClasses.HIDDEN_LAYER_GENERATION_STATE:
@@ -110,19 +112,14 @@ public class BackwardPropagation extends
                             aggregate(NumberOfClasses.ITERATIONS_ID, new IntWritable(1));
                             aggregate(NumberOfClasses.STATE_ID, new IntWritable(1));
                         }
-
-                        // activate input layer
-                        if(neuronNum == 1) {
-                            activateNextLayer(networkNum, layerNum);
-                        }
                         break;
 
                     default:
                         activateNextLayerBiasUnit(networkNum, layerNum, neuronNum);
                         forwardProp(vertex, layerNum);
+                        vertex.voteToHalt();
                 }
 
-                vertex.voteToHalt();
                 break;
 
             case NumberOfClasses.BACKWARD_PROPAGATION_STATE:
@@ -410,7 +407,7 @@ public class BackwardPropagation extends
     private void generateNextLayerBiasUnit(int networkNum, int layerNum, int neuronNum) throws IOException {
         // run only once per network
         if (neuronNum == Config.BIAS_UNIT && layerNum != Config.MAX_HIDDEN_LAYER_NUM) {
-            Text id = getNeuronId(networkNum, layerNum, Config.BIAS_UNIT);
+            Text id = getNeuronId(networkNum, getNextLayerNum(layerNum), Config.BIAS_UNIT);
             Logger.d("Generating bias unit " + id);
             NeuronValue val = new NeuronValue(1d, 0d, 0d, 0);
             addVertexRequest(id, val);
@@ -489,7 +486,7 @@ public class BackwardPropagation extends
             default:
                 //flush error aggregator DELTA
                 if (networkNum == 1) {
-                    Logger.d(String.format("flushing error agg for layerNum: %s, neuronNum: %d\n", layerNum, neuronNum));
+                    Logger.d(String.format("flushing error agg for layerNum: %s, neuronNum: %d", layerNum, neuronNum));
 
                     int nextLayerNeuronCount = getNeuronCountByLayer(getNextLayerNum(layerNum));
                     if (layerNum == Config.MAX_HIDDEN_LAYER_NUM)

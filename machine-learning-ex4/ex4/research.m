@@ -3,7 +3,7 @@ clear ; close all; clc
 input_layer_size  = 2;
 hidden_layer_size = 2;
 num_labels = 1;
-learning_rate = 0.05;
+learning_rate = 0.1;
 
 load('researchdata1.mat');
 m = size(X, 1);

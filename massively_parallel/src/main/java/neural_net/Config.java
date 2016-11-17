@@ -9,7 +9,7 @@ public class Config {
     static final int OUTPUT_LAYER = -1;
     static final String DELIMITER = ":";
     static final double LEARNING_RATE = 0.1;
-    static final int MAX_ITER = 5;
+    static final int MAX_ITER = 50;
     static final int MAX_HIDDEN_LAYER_NUM = 2;                 // minimum value 2
 
     static final boolean TEST_WEIGHTS = true;

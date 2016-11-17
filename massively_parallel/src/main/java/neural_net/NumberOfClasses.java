@@ -32,6 +32,7 @@ public class NumberOfClasses extends DefaultMasterCompute {
     public static final Random random = new Random();
 
     int printCounter = 3;
+    int prevIteraion = 0;
 
     @Override
     public void compute() {
@@ -39,6 +40,7 @@ public class NumberOfClasses extends DefaultMasterCompute {
         if (iteration.get() > Config.MAX_ITER) {
             printWeights();
             haltComputation();
+            return;
         }
 
         printCost();
@@ -256,12 +258,14 @@ public class NumberOfClasses extends DefaultMasterCompute {
     }
 
     private void printCost() {
-        if(printCounter++ % 3 == 0) {
+        IntWritable iteration = getAggregatedValue(ITERATIONS_ID);
+
+        if(prevIteraion < iteration.get()) {
+            prevIteraion = iteration.get();
             DoubleWritable costWr = getAggregatedValue(COST_AGGREGATOR);
             IntWritable m = getAggregatedValue(NUMBER_OF_NETWORKS_ID);
             double cost = -costWr.get() / m.get();
-            IntWritable iteration = getAggregatedValue(ITERATIONS_ID);
-            System.out.println("iteration: " + iteration.get() + ", Cost at master = " + cost);
+            Logger.i("iteration: " + iteration.get() + ", Cost at master = " + cost);
             if(cost < 0) {
                 haltComputation();
             }
