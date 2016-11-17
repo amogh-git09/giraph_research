@@ -12,15 +12,20 @@ public class Config {
     static final int MAX_ITER = 50;
     static final int MAX_HIDDEN_LAYER_NUM = 2;                 // minimum value 2
 
-    static final boolean TEST_WEIGHTS = true;
+    static final boolean TEST_WEIGHTS = false;
 
     //abalone
-//    static final int INPUT_LAYER_NEURON_COUNT = 7;
-//    static final int OUTPUT_LAYER_NEURON_COUNT = 29;
-//    static final int[] LAYER_COUNTS = {INPUT_LAYER_NEURON_COUNT, 7, OUTPUT_LAYER_NEURON_COUNT};
+    static final int INPUT_LAYER_NEURON_COUNT = 7;
+    static final int OUTPUT_LAYER_NEURON_COUNT = 29;
+    static final int[] LAYER_COUNTS = {INPUT_LAYER_NEURON_COUNT, 7, OUTPUT_LAYER_NEURON_COUNT};
+
+//    //iris
+//    static final int INPUT_LAYER_NEURON_COUNT = 4;
+//    static final int OUTPUT_LAYER_NEURON_COUNT = 3;
+//    static final int[] LAYER_COUNTS = {INPUT_LAYER_NEURON_COUNT, 3, OUTPUT_LAYER_NEURON_COUNT};
 
     //test
-    static final int INPUT_LAYER_NEURON_COUNT = 2;
-    static final int OUTPUT_LAYER_NEURON_COUNT = 1;
-    static final int[] LAYER_COUNTS = {INPUT_LAYER_NEURON_COUNT, 2, OUTPUT_LAYER_NEURON_COUNT};
+//    static final int INPUT_LAYER_NEURON_COUNT = 2;
+//    static final int OUTPUT_LAYER_NEURON_COUNT = 1;
+//    static final int[] LAYER_COUNTS = {INPUT_LAYER_NEURON_COUNT, 2, OUTPUT_LAYER_NEURON_COUNT};
 }

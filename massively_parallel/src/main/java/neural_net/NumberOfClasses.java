@@ -158,8 +158,8 @@ public class NumberOfClasses extends DefaultMasterCompute {
         System.out.println("Weights for input layer\n");
 
         for (int i = Config.INPUT_LAYER; i <= Config.MAX_HIDDEN_LAYER_NUM; i++) {
+            System.out.printf("Weights for layer %d\n-----------\n", i);
             for(int j = 0; j <= BackwardPropagation.getNeuronCountByLayer(i); j++) {
-                System.out.printf("Weights for layer %d\n", i);
                 String aggName = GetWeightAggregatorName(i, j);
                 DoubleDenseVector weights = getAggregatedValue(aggName);
 
@@ -168,7 +168,7 @@ public class NumberOfClasses extends DefaultMasterCompute {
                     Double weight = weights.get(k - 1);
                     System.out.print(weight + " ");
                 }
-                System.out.println("");
+                System.out.println("\n");
             }
             System.out.println("\n");
         }
