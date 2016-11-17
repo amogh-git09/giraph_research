@@ -84,14 +84,15 @@ public class BackwardPropagation extends
                 switch (layerNum) {
                     case Config.OUTPUT_LAYER:
                         if (neuronNum == 1) {
-                            turnInputLayerToActive(networkNum);
-                            aggregate(NumberOfClasses.STATE_ID, new IntWritable(1));
+                            activateNextLayer(networkNum, layerNum);
+                            if (networkNum == 1)
+                                aggregate(NumberOfClasses.STATE_ID, new IntWritable(1));
                         }
                         break;
 
                     default:
                         generateEdgesFromNextLayer(vertex, networkNum, layerNum, neuronNum);
-                        if (networkNum == 1 && neuronNum == 1)
+                        if (neuronNum == 1)
                             activateNextLayer(networkNum, layerNum);
                 }
 
@@ -184,18 +185,18 @@ public class BackwardPropagation extends
         Logger.d("Getting error aggregator: " + aggName);
         DoubleDenseVector gradients = getAggregatedValue(aggName);
 
+        Logger.d("gradients: ");
+        if(Logger.DEBUG) {
+            for (int i = 0; i < getNextLayerNeuronCount(layerNum); i++) {
+                Logger.d(gradients.get(i) + "  ");
+            }
+        }
+
         for (Edge<Text, DoubleWritable> e : vertex.getMutableEdges()) {
             if (isAnEdgeToNextLayer(e, layerNum)) {
                 Text dstId = new Text(e.getTargetVertexId());
                 String[] edgeTokens = dstId.toString().split(Config.DELIMITER);
                 int dstNeuronNum = Integer.parseInt(edgeTokens[2]);
-
-                Logger.d("gradients: ");
-                if(Logger.DEBUG) {
-                    for (int i = 0; i < getNextLayerNeuronCount(layerNum); i++) {
-                        Logger.d(gradients.get(i) + "  ");
-                    }
-                }
 
                 double gradient = gradients.get(dstNeuronNum - 1) / m.get();
                 double old = e.getValue().get();

@@ -24,7 +24,7 @@ public class Config {
 //    static final int OUTPUT_LAYER_NEURON_COUNT = 3;
 //    static final int[] LAYER_COUNTS = {INPUT_LAYER_NEURON_COUNT, 3, OUTPUT_LAYER_NEURON_COUNT};
 
-    //test
+////    test
 //    static final int INPUT_LAYER_NEURON_COUNT = 2;
 //    static final int OUTPUT_LAYER_NEURON_COUNT = 1;
 //    static final int[] LAYER_COUNTS = {INPUT_LAYER_NEURON_COUNT, 2, OUTPUT_LAYER_NEURON_COUNT};
