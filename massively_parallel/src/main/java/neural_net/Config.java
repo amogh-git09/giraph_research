@@ -12,7 +12,7 @@ public class Config {
     static final int MAX_ITER = 50;
     static final int MAX_HIDDEN_LAYER_NUM = 2;                 // minimum value 2
 
-    static final boolean TEST_WEIGHTS = true;
+    static final boolean TEST_WEIGHTS = false;
 
 //    //abalone
 //    static final int INPUT_LAYER_NEURON_COUNT = 7;
