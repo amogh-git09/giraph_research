@@ -1,5 +1,8 @@
 package neural_net;
 
+import neural_net.Logger;
+import neural_net.MyGiraphTextInputFormat;
+import neural_net.NeuronValue;
 import org.apache.giraph.graph.Vertex;
 import org.apache.giraph.io.VertexInputFormat;
 import org.apache.giraph.io.VertexReader;

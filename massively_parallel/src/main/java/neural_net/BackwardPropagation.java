@@ -11,7 +11,6 @@ import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.util.ToolRunner;
-import org.python.antlr.ast.Num;
 
 import java.io.IOException;
 
@@ -21,6 +20,8 @@ import java.io.IOException;
 public class BackwardPropagation extends
         BasicComputation<Text, NeuronValue, DoubleWritable, Text> {
 
+    PerformanceContext context = null;
+
     public static void main(String[] args) throws Exception {
         System.exit(ToolRunner.run(new GiraphRunner(), args));
     }
@@ -28,6 +29,15 @@ public class BackwardPropagation extends
     @Override
     public void compute(Vertex<Text, NeuronValue, DoubleWritable> vertex,
                         Iterable<Text> messages) throws IOException {
+
+        if(context == null)
+            context = getWorkerContext();
+
+        if(!context.startTimeRegistered) {
+            context.startTime = System.currentTimeMillis();
+            context.startTimeRegistered = true;
+            Logger.p(String.format("Registered start time: %d", context.startTime));
+        }
 
         String[] tokens = vertex.getId().toString().split(Config.DELIMITER);
         int networkNum = Integer.parseInt(tokens[0]);
@@ -48,6 +58,17 @@ public class BackwardPropagation extends
         if (iteration.get() == Config.MAX_ITER - 1) {
             if (networkNum == 1 && layerNum != Config.OUTPUT_LAYER) {
                 finishComputation(vertex, layerNum, neuronNum);
+            }
+        }
+
+        if(Logger.PERFORMANCE) {
+            if (context.prevStage != state.get()) {
+                long currTime = System.currentTimeMillis();
+                Logger.p(String.format("PrevStage: %d, currStage: %d", context.prevStage, state.get()));
+                Logger.p(String.format("StartTime = %d, CurrTime = %d, diff = %.3f secs",
+                        context.startTime, currTime, (currTime - context.startTime) / (double) 1000));
+                context.prevStage = state.get();
+                context.startTime = currTime;
             }
         }
 
@@ -102,7 +123,7 @@ public class BackwardPropagation extends
             case NumberOfClasses.FORWARD_PROPAGATION_STATE:
                 updateFrontWeights(vertex, layerNum, neuronNum);
                 updateBackWeights(vertex, messages, networkNum, layerNum, neuronNum);
-                setNewActivation(vertex, messages, layerNum, neuronNum);
+                updateActivation(vertex, messages, layerNum, neuronNum);
 
                 switch (layerNum) {
                     case Config.OUTPUT_LAYER:
@@ -161,7 +182,7 @@ public class BackwardPropagation extends
         int y = val.getClassFlag();
         double activation = val.getActivation();
         if (activation == 0) {
-            System.out.println("\n\n\nACTIVATION ZERO\n\n\n");
+            Logger.d("ACTIVATION ZERO");
             return 0;
         }
         double fragment = y * Math.log(activation) + (1 - y) * Math.log(1 - activation);
@@ -214,21 +235,47 @@ public class BackwardPropagation extends
 
     private void updateBackWeights(Vertex<Text, NeuronValue, DoubleWritable> vertex,
                                    Iterable<Text> messages, int networkNum, int layerNum, int neuronNum) {
+
         if (layerNum == Config.INPUT_LAYER || neuronNum == Config.BIAS_UNIT)
             return;
 
         IntWritable m = getAggregatedValue(NumberOfClasses.NUMBER_OF_NETWORKS_ID);
+        int prevLayerNum = layerNum == Config.OUTPUT_LAYER ? Config.MAX_HIDDEN_LAYER_NUM : (layerNum - 1);
 
-        for(Text msg : messages) {
-            Logger.d("msg: " + msg);
-            String[] tokens = msg.toString().split(Config.DELIMITER);
-            double gradient = Double.parseDouble(tokens[2]) / m.get();
-            int srcNeuronNum = Integer.parseInt(tokens[1]);
-            Text dstId = getNeuronId(networkNum, getPrevLayerNum(layerNum), srcNeuronNum);
-            Logger.d(String.format("Updating back weight %s -> %s",
-                    vertex.getId().toString(), dstId.toString()));
-            updateWeight(vertex, dstId, gradient, Config.LEARNING_RATE);
+        for (Edge<Text, DoubleWritable> e : vertex.getMutableEdges()) {
+            if (isAnEdgeToPrevLayer(e, layerNum)) {
+                Text dstId = e.getTargetVertexId();
+                String[] tokens = dstId.toString().split(Config.DELIMITER);
+                int dstNeuronNum = Integer.parseInt(tokens[2]);
+
+                String aggName = NumberOfClasses.GetErrorAggregatorName(prevLayerNum, dstNeuronNum);
+                DoubleDenseVector gradients = getAggregatedValue(aggName);
+
+                Double gradient = gradients.get(neuronNum - 1) / m.get();
+                Double old = e.getValue().get();
+                Double update = gradient * Config.LEARNING_RATE;
+
+                Logger.d("Updating back edge " + vertex.getId() + " --> " + e.getTargetVertexId());
+                Logger.d(String.format("Old val: %f, gradient: %f, update: %f, new val: %f\n",
+                        old, gradient, update, (old - update)));
+
+                // gradient descent
+                e.getValue().set(old - update);
+            }
         }
+
+//        IntWritable m = getAggregatedValue(NumberOfClasses.NUMBER_OF_NETWORKS_ID);
+//
+//        for(Text msg : messages) {
+//            Logger.d("msg: " + msg);
+//            String[] tokens = msg.toString().split(Config.DELIMITER);
+//            double gradient = Double.parseDouble(tokens[2]) / m.get();
+//            int srcNeuronNum = Integer.parseInt(tokens[1]);
+//            Text dstId = getNeuronId(networkNum, getPrevLayerNum(layerNum), srcNeuronNum);
+//            Logger.d(String.format("Updating back weight %s -> %s",
+//                    vertex.getId().toString(), dstId.toString()));
+//            updateWeight(vertex, dstId, gradient, Config.LEARNING_RATE);
+//        }
     }
 
     private void backPropagateError(Vertex<Text, NeuronValue, DoubleWritable> vertex, int layerNum, int neuronNum) {
@@ -469,7 +516,7 @@ public class BackwardPropagation extends
         aggregate(NumberOfClasses.COST_AGGREGATOR, new DoubleWritable(cost));
     }
 
-    private void setNewActivation(Vertex<Text, NeuronValue, DoubleWritable> vertex,
+    private void updateActivation(Vertex<Text, NeuronValue, DoubleWritable> vertex,
                                   Iterable<Text> messages, int layerNum, int neuronNum) {
 
         if (layerNum != Config.INPUT_LAYER && neuronNum != Config.BIAS_UNIT) {

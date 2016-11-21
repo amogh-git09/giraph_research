@@ -13,7 +13,6 @@ import java.io.IOException;
  * Created by amogh-lab on 16/10/25.
  */
 public class NeuronValue implements WritableComparable {
-    private BooleanWritable isRealNeuron = new BooleanWritable(true);
     private DoubleWritable activation = new DoubleWritable(0.0D);
     private DoubleWritable weightedInput = new DoubleWritable(0.0D);
     private DoubleWritable error = new DoubleWritable(0.0D);
