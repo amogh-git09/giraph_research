@@ -69,10 +69,8 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
                 return false;
             }
 
-            counter++;
-
             if(counter%1000 == 0) {
-                System.out.println("Read " + counter + " vertices");
+                Logger.i("Read " + counter + " vertices");
             }
 
             Text line = lineRecordReader.getCurrentValue();
@@ -88,6 +86,7 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
 
                 layerNum = OUTPUT_LAYER;      //output layer
                 currentVertex = vertex;
+                counter++;
                 return true;
             }
 
@@ -96,6 +95,7 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
                 vertexNum = 1;
                 layerNum = INPUT_LAYER;
                 if(!lineRecordReader.nextKeyValue()) {
+                    Logger.i("Total vertices = " + counter);
                     return false;
                 }
                 line = lineRecordReader.getCurrentValue();
@@ -115,6 +115,7 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
 
             vertex.initialize(id, val);
             currentVertex = vertex;
+            counter++;
             return true;
         }
 
