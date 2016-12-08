@@ -217,87 +217,6 @@ public class BackwardPropagation extends
         }
     }
 
-//    private void updateFrontWeights(Vertex<Text, NeuronValue, DoubleWritable> vertex, int layerNum, int neuronNum) {
-//        if (layerNum == Config.OUTPUT_LAYER)
-//            return;
-//
-//        IntWritable m = getAggregatedValue(NumberOfClasses.NUMBER_OF_NETWORKS_ID);
-//        String aggName = NumberOfClasses.GetErrorAggregatorName(layerNum, neuronNum);
-//        Logger.d("Getting error aggregator: " + aggName);
-//        DoubleDenseVector gradients = getAggregatedValue(aggName);
-//
-//        Logger.d("gradients: ");
-//        if(Logger.DEBUG) {
-//            for (int i = 0; i < getNextLayerNeuronCount(layerNum); i++) {
-//                Logger.d(gradients.get(i) + "  ");
-//            }
-//        }
-//
-//        for (Edge<Text, DoubleWritable> e : vertex.getMutableEdges()) {
-//            if (isAnEdgeToNextLayer(e, layerNum)) {
-//                Text dstId = new Text(e.getTargetVertexId());
-//                String[] edgeTokens = dstId.toString().split(Config.DELIMITER);
-//                int dstNeuronNum = Integer.parseInt(edgeTokens[2]);
-//
-//                double gradient = gradients.get(dstNeuronNum - 1) / m.get();
-//                double old = e.getValue().get();
-//                double update = gradient * Config.LEARNING_RATE;
-//
-//                // gradient descent
-//                e.getValue().set(old - update);
-//
-//                Logger.d("Updating front edge " + vertex.getId() + " --> " + e.getTargetVertexId());
-//                Logger.d(String.format("Old val: %f, gradient: %f, update: %f, new val: %f",
-//                        old, gradient, update, e.getValue().get()));
-//            }
-//        }
-//    }
-
-    private void updateBackWeights(Vertex<Text, NeuronValue, DoubleWritable> vertex,
-                                   Iterable<Text> messages, int networkNum, int layerNum, int neuronNum) {
-
-        if (layerNum == Config.INPUT_LAYER || neuronNum == Config.BIAS_UNIT)
-            return;
-
-        IntWritable m = getAggregatedValue(NumberOfClasses.NUMBER_OF_NETWORKS_ID);
-        int prevLayerNum = layerNum == Config.OUTPUT_LAYER ? Config.MAX_HIDDEN_LAYER_NUM : (layerNum - 1);
-
-        for (Edge<Text, DoubleWritable> e : vertex.getMutableEdges()) {
-            if (isAnEdgeToPrevLayer(e, layerNum)) {
-                Text dstId = e.getTargetVertexId();
-                String[] tokens = dstId.toString().split(Config.DELIMITER);
-                int dstNeuronNum = Integer.parseInt(tokens[2]);
-
-                String aggName = NumberOfClasses.GetErrorAggregatorName(prevLayerNum, dstNeuronNum);
-                DoubleDenseVector gradients = getAggregatedValue(aggName);
-
-                Double gradient = gradients.get(neuronNum - 1) / m.get();
-                Double old = e.getValue().get();
-                Double update = gradient * Config.LEARNING_RATE;
-
-                Logger.d("Updating back edge " + vertex.getId() + " --> " + e.getTargetVertexId());
-                Logger.d(String.format("Old val: %f, gradient: %f, update: %f, new val: %f\n",
-                        old, gradient, update, (old - update)));
-
-                // gradient descent
-                e.getValue().set(old - update);
-            }
-        }
-
-//        IntWritable m = getAggregatedValue(NumberOfClasses.NUMBER_OF_NETWORKS_ID);
-//
-//        for(Text msg : messages) {
-//            Logger.d("msg: " + msg);
-//            String[] tokens = msg.toString().split(Config.DELIMITER);
-//            double gradient = Double.parseDouble(tokens[2]) / m.get();
-//            int srcNeuronNum = Integer.parseInt(tokens[1]);
-//            Text dstId = getNeuronId(networkNum, getPrevLayerNum(layerNum), srcNeuronNum);
-//            Logger.d(String.format("Updating back weight %s -> %s",
-//                    vertex.getId().toString(), dstId.toString()));
-//            updateWeight(vertex, dstId, gradient, Config.LEARNING_RATE);
-//        }
-    }
-
     private void backPropagateError(Vertex<Text, NeuronValue, DoubleWritable> vertex, int networkNum,
                                     int layerNum, int neuronNum) {
 
@@ -386,26 +305,6 @@ public class BackwardPropagation extends
             double weight = weights.get(i);
             vertex.getValue().setWeight(weight, i);
             Logger.d("Setting init weight to neuron " + (i+1) + ", value = " + weight);
-        }
-    }
-
-    private void generateEdgesFromNextLayer(Vertex<Text, NeuronValue, DoubleWritable> vertex,
-                                            int networkNum, int layerNum, int neuronNum) throws IOException {
-
-        int nextLayer = getNextLayerNum(layerNum);
-        int nextLayerNeuronCount = getNeuronCountByLayer(nextLayer);
-
-        for (Edge<Text, DoubleWritable> e : vertex.getEdges()) {
-            if (!isAnEdgeToNextLayer(e, layerNum))
-                continue;
-
-            Text srcId = new Text(e.getTargetVertexId());
-            DoubleWritable weight = new DoubleWritable(e.getValue().get());
-
-            Edge<Text, DoubleWritable> backEdge = EdgeFactory.create(vertex.getId(), weight);
-            addEdgeRequest(srcId, backEdge);
-            Logger.d(String.format("Generated back edge from %s to %s with weight %f", srcId.toString(),
-                    backEdge.getTargetVertexId().toString(), backEdge.getValue().get()));
         }
     }
 
