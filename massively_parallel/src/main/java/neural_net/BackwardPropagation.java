@@ -583,8 +583,10 @@ public class BackwardPropagation extends
 
                 int size = getNextLayerNeuronCount(layerNum);
                 Logger.d("errVector : ");
-                for (int i = 0; i < size; i++) {
-                    Logger.d(errVector.get(i) + "  ");
+                if(Logger.DEBUG) {
+                    for (int i = 0; i < size; i++) {
+                        Logger.d(errVector.get(i) + "  ");
+                    }
                 }
 
                 if (layerNum != Config.INPUT_LAYER) {
