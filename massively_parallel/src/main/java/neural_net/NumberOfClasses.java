@@ -18,9 +18,8 @@ import java.util.Random;
 public class NumberOfClasses extends DefaultMasterCompute {
 
     public static final int HIDDEN_LAYER_GENERATION_STATE = 0;
-    public static final int BACK_EDGES_GENERATION_STATE = 1;
-    public static final int FORWARD_PROPAGATION_STATE = 2;
-    public static final int BACKWARD_PROPAGATION_STATE = 3;
+    public static final int FORWARD_PROPAGATION_STATE = 1;
+    public static final int BACKWARD_PROPAGATION_STATE = 2;
 
     public static final String COST_AGGREGATOR = "costAggregator";
     public static final String WEIGHT_AGGREGATOR_PREFIX = "weightAggregator";
@@ -50,9 +49,6 @@ public class NumberOfClasses extends DefaultMasterCompute {
         switch (state.get()) {
             case HIDDEN_LAYER_GENERATION_STATE:
                 Logger.d("HIDDEN LAYER GENERATION STAGE");
-                break;
-            case BACK_EDGES_GENERATION_STATE:
-                Logger.d("BACK EDGES GENERATION STAGE");
                 break;
             case FORWARD_PROPAGATION_STATE:
                 Logger.d("FORWARD PROPAGATION STAGE");

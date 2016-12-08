@@ -40,8 +40,12 @@ public class NeuronValue implements WritableComparable {
         weights = new ArrayWritable<>(DoubleWritable.class, weightArray);
     }
 
-    public int getWeightsLenght() {
+    public int getWeightsLength() {
         return weights.get().length;
+    }
+
+    public double getWeight(int index) {
+        return weights.get()[index].get();
     }
 
     public double getActivation() {
