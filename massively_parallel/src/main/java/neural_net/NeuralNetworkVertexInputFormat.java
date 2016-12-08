@@ -69,6 +69,7 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
         @Override
         public boolean nextVertex() throws IOException, InterruptedException {
             if(!lineRecordReader.nextKeyValue()) {
+                Logger.i("Total vertices = " + counter);
                 return false;
             }
 

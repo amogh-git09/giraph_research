@@ -76,8 +76,10 @@ public class BackwardPropagation extends
             case NumberOfClasses.HIDDEN_LAYER_GENERATION_STATE:
                 switch (layerNum) {
                     case Config.MAX_HIDDEN_LAYER_NUM:
-                        generateEdgesToNextLayer(vertex, networkNum, layerNum, Config.OUTPUT_LAYER,
-                                Config.OUTPUT_LAYER_NEURON_COUNT, neuronNum);
+                        // set weights array
+                        vertex.getValue().generateWeightsArray(getNextLayerNeuronCount(layerNum));
+
+                        setInitWeights(vertex, layerNum, neuronNum);
                         break;
 
                     case Config.OUTPUT_LAYER:
@@ -91,11 +93,23 @@ public class BackwardPropagation extends
                         break;
 
                     default:
-                        // generate next layer's bias unit
-                        generateNextLayerBiasUnit(networkNum, layerNum, neuronNum);
-                        // generate edges
-                        generateEdgesToNextLayer(vertex, networkNum, layerNum, getNextLayerNum(layerNum),
-                                getNextLayerNeuronCount(layerNum), neuronNum);
+                        // generate next layer neurons
+                        if(neuronNum == 1) {
+                            generateBiasUnit(networkNum, getNextLayerNum(layerNum));
+                            generateVertices(networkNum, getNextLayerNum(layerNum));
+                        }
+
+                        // set weights array
+                        vertex.getValue().generateWeightsArray(getNextLayerNeuronCount(layerNum));
+
+                        // set weights
+                        setInitWeights(vertex, layerNum, neuronNum);
+
+//                        // generate next layer's bias unit
+//                        generateNextLayerBiasUnit(networkNum, layerNum, neuronNum);
+//                        // generate edges
+//                        generateEdgesToNextLayer(vertex, networkNum, layerNum, getNextLayerNum(layerNum),
+//                                getNextLayerNeuronCount(layerNum), neuronNum);
                 }
 
                 vertex.voteToHalt();
@@ -348,24 +362,55 @@ public class BackwardPropagation extends
         }
     }
 
-    private void generateEdgesToNextLayer(Vertex<Text, NeuronValue, DoubleWritable> vertex,
-                                          int networkNum, int thisLayer, int nextLayer,
-                                          int nextLayerCount, int neuronNum) throws IOException {
+    private void generateBiasUnit(int networkNum, int layerNum) throws IOException {
+        Text id = getNeuronId(networkNum, layerNum, Config.BIAS_UNIT);
+        Logger.d("Generating bias unit " + id);
+        NeuronValue val = new NeuronValue(1d, 0d, 0d, 0);
+        addVertexRequest(id, val);
+    }
 
-        // no edges to bias unit
-        for (int i = 1; i <= nextLayerCount; i++) {
-            DoubleDenseVector weights = getAggregatedValue(
-                    NumberOfClasses.GetWeightAggregatorName(thisLayer, neuronNum));
-            Double weight = weights.get(i - 1);
+    private void generateVertices(int networkNum, int layerNum) throws IOException {
+        int neuronCount = getNeuronCountByLayer(layerNum);
 
-            Text dstId = new Text(networkNum + ":" + nextLayer + ":" + i);
-            sendMessage(dstId, new Text(""));                   // adds a new vertex if not existent
-            Edge<Text, DoubleWritable> e = EdgeFactory.create(dstId, new DoubleWritable(weight));
-            addEdgeRequest(vertex.getId(), e);
-            Logger.d("Generated edge from " + vertex.getId() + " to " +
-                    e.getTargetVertexId() + " with weight " + e.getValue());
+        for(int i = 1; i <= neuronCount; i++) {
+            Text dstId = getNeuronId(networkNum, layerNum, i);
+            sendMessage(dstId, new Text(""));
+            Logger.d("Generating vertex: " + dstId);
         }
     }
+
+    private void setInitWeights(Vertex<Text, NeuronValue, DoubleWritable> vertex,
+                                int layerNum, int neuronNum) {
+
+        DoubleDenseVector weights = getAggregatedValue(
+                NumberOfClasses.GetWeightAggregatorName(layerNum, neuronNum));
+
+        // set weights
+        for(int i = 0; i < getNextLayerNeuronCount(layerNum); i++) {
+            double weight = weights.get(i);
+            vertex.getValue().setWeight(weight, i);
+            Logger.d("Setting init weight to neuron " + (i+1) + ", value = " + weight);
+        }
+    }
+
+//    private void generateEdgesToNextLayer(Vertex<Text, NeuronValue, DoubleWritable> vertex,
+//                                          int networkNum, int thisLayer, int nextLayer,
+//                                          int nextLayerCount, int neuronNum) throws IOException {
+//
+//        // no edges to bias unit
+//        for (int i = 1; i <= nextLayerCount; i++) {
+//            DoubleDenseVector weights = getAggregatedValue(
+//                    NumberOfClasses.GetWeightAggregatorName(thisLayer, neuronNum));
+//            Double weight = weights.get(i - 1);
+//
+//            Text dstId = new Text(networkNum + ":" + nextLayer + ":" + i);
+//            sendMessage(dstId, new Text(""));                   // adds a new vertex if not existent
+//            Edge<Text, DoubleWritable> e = EdgeFactory.create(dstId, new DoubleWritable(weight));
+//            addEdgeRequest(vertex.getId(), e);
+//            Logger.d("Generated edge from " + vertex.getId() + " to " +
+//                    e.getTargetVertexId() + " with weight " + e.getValue());
+//        }
+//    }
 
     private void generateEdgesFromNextLayer(Vertex<Text, NeuronValue, DoubleWritable> vertex,
                                             int networkNum, int layerNum, int neuronNum) throws IOException {

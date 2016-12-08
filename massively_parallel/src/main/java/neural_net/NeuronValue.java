@@ -1,5 +1,6 @@
 package neural_net;
 
+import org.apache.giraph.utils.ArrayWritable;
 import org.apache.hadoop.io.BooleanWritable;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
@@ -17,16 +18,30 @@ public class NeuronValue implements WritableComparable {
     private DoubleWritable weightedInput = new DoubleWritable(0.0D);
     private DoubleWritable error = new DoubleWritable(0.0D);
     private IntWritable classFlag = new IntWritable(0);
+    private ArrayWritable<DoubleWritable> weights = new ArrayWritable<>(DoubleWritable.class, new DoubleWritable[0]);
 
     public NeuronValue() {
 
     }
 
-    public NeuronValue(Double a, Double w, Double e, int f) {
-        activation = new DoubleWritable(a);
-        weightedInput = new DoubleWritable(w);
-        error = new DoubleWritable(e);
-        classFlag = new IntWritable(f);
+    public NeuronValue(Double activation, Double weightedInput, Double error, int classFlag) {
+
+        this.activation = new DoubleWritable(activation);
+        this.weightedInput = new DoubleWritable(weightedInput);
+        this.error = new DoubleWritable(error);
+        this.classFlag = new IntWritable(classFlag);
+        this.weights = new ArrayWritable<>(DoubleWritable.class, new DoubleWritable[0]);
+    }
+
+    public void generateWeightsArray(int weightCount) {
+        DoubleWritable[] weightArray = new DoubleWritable[weightCount];
+        for(int i=0; i<weightArray.length; i++)
+            weightArray[i] = new DoubleWritable(0);
+        weights = new ArrayWritable<>(DoubleWritable.class, weightArray);
+    }
+
+    public int getWeightsLenght() {
+        return weights.get().length;
     }
 
     public double getActivation() {
@@ -61,6 +76,10 @@ public class NeuronValue implements WritableComparable {
         error.set(e);
     }
 
+    public void setWeight(double weight, int index) {
+        this.weights.get()[index].set(weight);
+    }
+
     @Override
     public int compareTo(Object o) {
         NeuronValue other = (NeuronValue) o;
@@ -73,6 +92,7 @@ public class NeuronValue implements WritableComparable {
         weightedInput.write(dataOutput);
         error.write(dataOutput);
         classFlag.write(dataOutput);
+        weights.write(dataOutput);
     }
 
     @Override
@@ -81,5 +101,6 @@ public class NeuronValue implements WritableComparable {
         weightedInput.readFields(dataInput);
         error.readFields(dataInput);
         classFlag.readFields(dataInput);
+        weights.readFields(dataInput);
     }
 }

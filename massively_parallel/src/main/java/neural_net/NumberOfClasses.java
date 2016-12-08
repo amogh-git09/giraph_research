@@ -39,6 +39,7 @@ public class NumberOfClasses extends DefaultMasterCompute {
         IntWritable iteration = getAggregatedValue(ITERATIONS_ID);
         if (iteration.get() > Config.MAX_ITER) {
             printWeights();
+            Logger.i("Halting computation");
             haltComputation();
             return;
         }
