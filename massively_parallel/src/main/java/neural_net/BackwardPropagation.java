@@ -80,9 +80,8 @@ public class BackwardPropagation extends
                         vertex.getValue().generateWeightsArray(getNextLayerNeuronCount(layerNum));
 
                         setInitWeights(vertex, layerNum, neuronNum);
-                        break;
 
-                    case Config.OUTPUT_LAYER:
+                        // to next stage
                         if (neuronNum == 1) {
                             turnInputLayerToActive(networkNum);
                             aggregate(NumberOfClasses.NUMBER_OF_NETWORKS_ID, new IntWritable(networkNum));
@@ -105,11 +104,6 @@ public class BackwardPropagation extends
                         // set weights
                         setInitWeights(vertex, layerNum, neuronNum);
 
-//                        // generate next layer's bias unit
-//                        generateNextLayerBiasUnit(networkNum, layerNum, neuronNum);
-//                        // generate edges
-//                        generateEdgesToNextLayer(vertex, networkNum, layerNum, getNextLayerNum(layerNum),
-//                                getNextLayerNeuronCount(layerNum), neuronNum);
                 }
 
                 vertex.voteToHalt();
