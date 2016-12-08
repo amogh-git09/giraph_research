@@ -100,6 +100,9 @@ for t = 1:m
 	% Step 3 - Delta Hidden Layer
 	d2 = (Theta2NoBias' * d3) .* sigmoidGradient(z2);
 
+  err2 = d3 * a2';
+  err1 = d2 * a1';
+
 	% Step 4 - Accumulate
 	Delta2 += (d3 * a2');
 	Delta1 += (d2 * a1');
@@ -110,7 +113,7 @@ Delta2;
 
 % Step 5 - Normal Gradient
 Theta1_grad = (1 / m) * Delta1;
-Theta2_grad = (1 / m) * Delta2;
+Theta2_grad = (1 / m) * Delta2; 
 
 % Theta1_grad
 % Theta2_grad
