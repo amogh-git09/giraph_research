@@ -39,7 +39,7 @@ public class CSVToUsableFormat {
                         if(writer != null)
                             writer.close();
 
-                        outputFileName = String.format("%s_%s%d.%s", name, "cnv_", fileCounter++, ext);
+                        outputFileName = String.format("%s_%s%d.%s", name, "cnv_", fileCounter++, "txt");
                         file = new File(outputFileName);
                         writer = new PrintWriter(file, "UTF-8");
                     }

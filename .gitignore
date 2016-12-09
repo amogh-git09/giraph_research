@@ -6,3 +6,4 @@ build
 .gradle/
 .gradle
 _bsp
+mnist_train.csv
