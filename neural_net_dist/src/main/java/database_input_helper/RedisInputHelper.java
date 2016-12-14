@@ -1,16 +1,15 @@
 package database_input_helper;
 
-import distributed_net.DistributedNeuralNetwork;
+import distributed_net.DistNeuralNet;
 import org.apache.commons.lang.StringUtils;
 import redis.clients.jedis.Jedis;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 
 public class RedisInputHelper {
-    final static int featureCount = DistributedNeuralNetwork.INPUT_LAYER_NEURON_COUNT;
+    final static int featureCount = DistNeuralNet.INPUT_LAYER_NEURON_COUNT;
     final static int dataSetSize = 1;
 
     public static void main(String[] args) throws IOException {

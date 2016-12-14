@@ -1,12 +1,8 @@
 package master_compute;
 
-import debug.Logger;
-import distributed_net.DistributedNeuralNetwork;
 import org.apache.giraph.aggregators.DoubleSumAggregator;
-import org.apache.giraph.aggregators.IntOverwriteAggregator;
 import org.apache.giraph.aggregators.IntSumAggregator;
 import org.apache.giraph.master.DefaultMasterCompute;
-import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 
 /**

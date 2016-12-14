@@ -20,7 +20,7 @@ import java.io.IOException;
 /**
  * Created by amogh-lab on 16/11/09.
  */
-public class DistributedNeuralNetwork extends
+public class DistNeuralNet extends
         BasicComputation<Text, NeuronValue, DoubleWritable, Text> {
 
     private RedisWorkerContext workerContext;
@@ -577,6 +577,10 @@ public class DistributedNeuralNetwork extends
         return fragment;
     }
 
+    public static int getNextLayerNeuronCount(int layerNum) {
+        return getNeuronCount(getNextLayerNum(layerNum));
+    }
+
     public static int getNeuronCount(int layerNum) {
         if (layerNum == OUTPUT_LAYER)
             return LAYER_TO_NEURON[LAYER_TO_NEURON.length - 1];
@@ -649,7 +653,7 @@ public class DistributedNeuralNetwork extends
                 dataSetIndex.get() == 1) {
 
             DoubleWritable costWr = getAggregatedValue(NNMasterCompute.COST_AGGREGATOR);
-            Double cost = - costWr.get() / DistributedNeuralNetwork.DATA_SIZE;
+            Double cost = - costWr.get() / DistNeuralNet.DATA_SIZE;
             Logger.i2(String.format("Cost at SS %d = %s", getSuperstep(), cost.toString()));
 
             //flush cost
