@@ -1,7 +1,9 @@
 package nn_input_format;
 
+import config.Config;
 import debug.Logger;
 import distributed_net.DistNeuralNet;
+import distributed_net.EdgeValue;
 import distributed_net.NeuronValue;
 import org.apache.giraph.graph.Vertex;
 import org.apache.giraph.io.VertexInputFormat;
@@ -23,12 +25,11 @@ import java.util.List;
 /**
  * Created by amogh-lab on 16/10/10.
  */
-public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, NeuronValue, DoubleWritable> {
+public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, NeuronValue, EdgeValue> {
     GiraphTextInputFormat textInputFormat = new GiraphTextInputFormat();
-    static final int INPUT_LAYER = 1;
 
     @Override
-    public VertexReader<Text, NeuronValue, DoubleWritable> createVertexReader(InputSplit split, TaskAttemptContext context) throws IOException {
+    public VertexReader<Text, NeuronValue, EdgeValue> createVertexReader(InputSplit split, TaskAttemptContext context) throws IOException {
         return new NeuralNetworkVertexReader();
     }
 
@@ -42,9 +43,9 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
         return textInputFormat.getVertexSplits(context);
     }
 
-    public class NeuralNetworkVertexReader extends VertexReader<Text, NeuronValue, DoubleWritable> {
+    public class NeuralNetworkVertexReader extends VertexReader<Text, NeuronValue, EdgeValue> {
         private RecordReader<LongWritable, Text> lineRecordReader;
-        Vertex<Text, NeuronValue, DoubleWritable> currentVertex;
+        Vertex<Text, NeuronValue, EdgeValue> currentVertex;
 
         @Override
         public void initialize(InputSplit inputSplit, TaskAttemptContext context) throws IOException, InterruptedException {
@@ -58,12 +59,9 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
                 return false;
             }
 
-            Text line = lineRecordReader.getCurrentValue();
-            String data = line.toString();
-
-            Vertex<Text, NeuronValue, DoubleWritable> vertex = getConf().createVertex();
-            Text id = new Text(1 + DistNeuralNet.DELIMITER + 0);
-            int nextLayerNeuronCount = DistNeuralNet.getNextLayerNeuronCount(DistNeuralNet.INPUT_LAYER);
+            Vertex<Text, NeuronValue, EdgeValue> vertex = getConf().createVertex();
+            Text id = DistNeuralNet.getNeuronId(Config.INPUT_LAYER, Config.BIAS_UNIT);
+            int nextLayerNeuronCount = DistNeuralNet.getNextLayerNeuronCount(Config.INPUT_LAYER);
             Logger.d("First neuron, derivatives size = " + nextLayerNeuronCount);
             NeuronValue val = new NeuronValue(1d, 0d, 0d, 0, nextLayerNeuronCount);
 
@@ -73,8 +71,7 @@ public class NeuralNetworkVertexInputFormat extends VertexInputFormat<Text, Neur
         }
 
         @Override
-        public Vertex<Text, NeuronValue, DoubleWritable> getCurrentVertex() throws IOException, InterruptedException {
-            Logger.d("Returning initialized vertex, derivatives size = " + currentVertex.getValue().getDerivativesLength());
+        public Vertex<Text, NeuronValue, EdgeValue> getCurrentVertex() throws IOException, InterruptedException {
             return currentVertex;
         }
 

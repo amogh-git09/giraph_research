@@ -60,4 +60,8 @@ public class RedisWorkerContext extends WorkerContext {
         Double rand = random.nextDouble();
         return min + (max - min) * rand;
     }
+
+    public double getRandomActivation() {
+        return getRandomInRange(-10d, 10d);
+    }
 }

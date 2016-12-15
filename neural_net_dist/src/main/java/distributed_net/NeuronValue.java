@@ -16,7 +16,6 @@ public class NeuronValue implements WritableComparable {
     private DoubleWritable weightedInput = new DoubleWritable(0.0D);
     private DoubleWritable error = new DoubleWritable(0.0D);
     private IntWritable classFlag = new IntWritable(0);
-    private ArrayWritable<DoubleWritable> derivatives = new ArrayWritable<>(DoubleWritable.class, new DoubleWritable[0]);
 
     public NeuronValue() {
 
@@ -33,7 +32,6 @@ public class NeuronValue implements WritableComparable {
             tmp[i] = new DoubleWritable(0);
         }
 
-        this.derivatives.set(tmp);
     }
 
     public double getActivation() {
@@ -68,32 +66,6 @@ public class NeuronValue implements WritableComparable {
         error.set(e);
     }
 
-    public void updateDerivative(int index, double val) {
-        double old = derivatives.get()[index].get();
-        derivatives.get()[index].set(old + val);
-    }
-
-    public int getDerivativesLength() {
-        return derivatives.get().length;
-    }
-
-    public void flushDerivatives() {
-        for(int i=0; i<derivatives.get().length; i++) {
-            derivatives.get()[i].set(0);
-        }
-    }
-
-    public void printDerivatives() {
-        for(int i=0; i<derivatives.get().length; i++) {
-            Logger.d(String.format("derivatives[%d] = %.15f",
-                    i, derivatives.get()[i].get()));
-        }
-    }
-
-    public double getDerivative(int index) {
-        return derivatives.get()[index].get();
-    }
-
     @Override
     public int compareTo(Object o) {
         NeuronValue other = (NeuronValue) o;
@@ -106,7 +78,6 @@ public class NeuronValue implements WritableComparable {
         weightedInput.write(dataOutput);
         error.write(dataOutput);
         classFlag.write(dataOutput);
-        derivatives.write(dataOutput);
     }
 
     @Override
@@ -115,6 +86,5 @@ public class NeuronValue implements WritableComparable {
         weightedInput.readFields(dataInput);
         error.readFields(dataInput);
         classFlag.readFields(dataInput);
-        derivatives.readFields(dataInput);
     }
 }

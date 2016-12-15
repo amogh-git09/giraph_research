@@ -13,14 +13,13 @@ public class NNMasterCompute extends DefaultMasterCompute {
     public static final int STABILIZE_INITIAL_NETWORK = 1;
     public static final int FRONT_EDGES_GENERATION_STAGE = 2;
     public static final int BACK_EDGES_GENERATION_STAGE = 3;
-    public static final int  DATA_LOAD_STAGE = 4;
-    public static final int FORWARD_PROPAGATION_STAGE = 5;
-    public static final int BACKWARD_PROPAGATION_STAGE = 6;
+    public static final int FORWARD_PROPAGATION_STAGE = 4;
+    public static final int BACKWARD_PROPAGATION_STAGE = 5;
 
     public static final String STAGE_AGG_ID = "StageAggregator";
-    public static final String DATA_SET_INDEX_AGG = "DataSetIndex";
+//    public static final String DATA_SET_INDEX_AGG = "DataSetIndex";
     public static final String COST_AGGREGATOR = "costAggregator";
-    public static final int MAX_ITER = 10000000;
+    public static final int MAX_ITER = 500;
 
     @Override
     public void compute() {
@@ -31,9 +30,9 @@ public class NNMasterCompute extends DefaultMasterCompute {
     @Override
     public void initialize() throws InstantiationException, IllegalAccessException {
         registerPersistentAggregator(STAGE_AGG_ID, IntSumAggregator.class);
-        registerPersistentAggregator(DATA_SET_INDEX_AGG, IntSumAggregator.class);
+//        registerPersistentAggregator(DATA_SET_INDEX_AGG, IntSumAggregator.class);
         registerPersistentAggregator(COST_AGGREGATOR, DoubleSumAggregator.class);
-        setAggregatedValue(DATA_SET_INDEX_AGG, new IntWritable(1));
+//        setAggregatedValue(DATA_SET_INDEX_AGG, new IntWritable(1));
     }
 
     public static String idToStage(int id) {
@@ -42,8 +41,8 @@ public class NNMasterCompute extends DefaultMasterCompute {
                 return "FRONT EDGES GENERATION STAGE";
             case BACK_EDGES_GENERATION_STAGE:
                 return "BACK EDGES GENERATION STAGE";
-            case DATA_LOAD_STAGE:
-                return "DATA LOAD STAGE";
+//            case DATA_LOAD_STAGE:
+//                return "DATA LOAD STAGE";
             case FORWARD_PROPAGATION_STAGE:
                 return "FORWARD PROPAGATION STAGE";
             case BACKWARD_PROPAGATION_STAGE:
