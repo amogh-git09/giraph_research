@@ -1,28 +1,29 @@
 apply plugin: 'java'
 repositories {
-    mavenCentral()
+    // Use 'jcenter' for resolving your dependencies.
+    // You can declare any Maven/Ivy/file repository here.
+    jcenter()
 }
 
 //create a single Jar with all dependencies
 task fatJar(type: Jar) {
     manifest {
-        attributes 'Implementation-Title': 'Sequential Distributed Network',
+        attributes 'Implementation-Title': 'Matrix Impl',
                 'Implementation-Version': 1.0,
-                'Main-Class': 'distributed_net.DistributedNeuralNetwork'
+                'Main-Class': 'DVWTest'
     }
     baseName = project.name + '-all'
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
 }
 
-// In this section you declare the dependencies for your production and test code
 dependencies {
+    // The production code uses the SLF4J logging API at compile time
+    compile 'org.slf4j:slf4j-api:1.7.13'
+    // https://mvnrepository.com/artifact/com.googlecode.matrix-toolkits-java/mtj
+    compile group: 'com.googlecode.matrix-toolkits-java', name: 'mtj', version: '0.9.14'
     // https://mvnrepository.com/artifact/org.apache.giraph/giraph-core
     compile group: 'org.apache.giraph', name: 'giraph-core', version: '1.1.0'
     // https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-core
     compile group: 'org.apache.hadoop', name: 'hadoop-core', version: '1.2.1'
-    // https://mvnrepository.com/artifact/org.apache.commons/commons-math3
-    compile group: 'org.apache.commons', name: 'commons-math3', version: '3.0'
-    // https://mvnrepository.com/artifact/redis.clients/jedis
-    compile group: 'redis.clients', name: 'jedis', version: '2.9.0'
 }
