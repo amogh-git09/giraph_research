@@ -7,6 +7,7 @@ public class Config {
     public static final int INPUT_LAYER_NEURON_COUNT = 4;
     public static final int OUTPUT_LAYER_NEURON_COUNT = 2;
     public static final String DELIMITER = ":";
+    public static final double EPSILON = 0.5;
 
     public static final int INPUT = 0;
     public static final int OUTPUT = -1;

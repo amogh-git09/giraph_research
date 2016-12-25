@@ -20,10 +20,7 @@ public class Logger {
 
     public static void i(String msg) {
         if(INFO) {
-            if(DEBUG)
-                System.out.println("\nINFO: " + msg);
-            else
-                System.out.println("INFO: " + msg);
+            System.out.println("INFO: " + msg);
         }
     }
 }

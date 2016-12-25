@@ -8,9 +8,9 @@ import java.io.IOException;
  * Created by amogh09 on 16/12/19.
  */
 public class NeuronValue implements WritableComparable {
-    DenseVectorWritable activations;
-    DenseMatrixWritable weights;
-    DenseVectorWritable output;
+    private DenseVectorWritable activations;
+    private DenseMatrixWritable weights;
+    private DenseVectorWritable output;
 
     public NeuronValue() {
         this.activations = new DenseVectorWritable();
@@ -49,7 +49,15 @@ public class NeuronValue implements WritableComparable {
         return activations;
     }
 
+    public void setActivations(DenseVectorWritable activations) {
+        this.activations = activations;
+    }
+
     public DenseVectorWritable getOutput() {
         return output;
+    }
+
+    public DenseMatrixWritable getWeights() {
+        return weights;
     }
 }

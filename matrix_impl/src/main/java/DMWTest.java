@@ -22,10 +22,11 @@ public class DMWTest extends
 
         System.out.println("This is " + vertex.getId());
         if(ss == 0) {
-            DenseMatrix m = new DenseMatrix(getRandMatrix(5, 5));
+            DenseMatrix m = new DenseMatrix(getRandMatrix(3, 4));
             DenseMatrixWritable vec = new DenseMatrixWritable(m);
             System.out.println("Generated matrix:");
             printMatrix(vec);
+            System.out.println("");
 
             for(Edge<IntWritable, NullWritable> e : vertex.getEdges()) {
                 sendMessage(e.getTargetVertexId(), vec);
@@ -34,6 +35,7 @@ public class DMWTest extends
             for(DenseMatrixWritable m : messages) {
                 System.out.println("Received message: ");
                 printMatrix(m);
+                System.out.println("");
             }
 
             vertex.voteToHalt();
@@ -43,12 +45,10 @@ public class DMWTest extends
     public void printMatrix(DenseMatrixWritable matrix) {
         int rows = matrix.getNumRows();
         int cols = matrix.getNumCols();
-        double[] array = matrix.matrix.getData();
 
-        int k=0;
         for(int i=0; i<rows; i++) {
             for(int j=0; j<cols; j++) {
-                System.out.printf("%02.1f  ", array[k++]);
+                System.out.printf("%02.1f  ", matrix.getMatrix().get(i, j));
             }
             System.out.println("");
         }

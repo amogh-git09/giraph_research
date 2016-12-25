@@ -1,5 +1,6 @@
 import no.uib.cipr.matrix.DenseMatrix;
 import no.uib.cipr.matrix.DenseVector;
+import no.uib.cipr.matrix.Matrix;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Writable;
 
@@ -11,7 +12,7 @@ import java.io.IOException;
  * Created by amogh09 on 16/12/19.
  */
 public class DenseMatrixWritable implements Writable {
-    DenseMatrix matrix;
+    private DenseMatrix matrix;
     private IntWritable numRows, numCols;
 
     public DenseMatrixWritable() {
@@ -38,6 +39,7 @@ public class DenseMatrixWritable implements Writable {
     public void write(DataOutput dataOutput) throws IOException {
         numRows.write(dataOutput);
         numCols.write(dataOutput);
+
         double[] data = matrix.getData();
         DenseVector v = new DenseVector(data);
         DenseVectorWritable vector = new DenseVectorWritable(v);
@@ -56,12 +58,24 @@ public class DenseMatrixWritable implements Writable {
         double[][] structuredData = new double[numRows.get()][numCols.get()];
 
         int k = 0;
-        for (int i = 0; i < numRows.get(); i++) {
-            for (int j = 0; j < numCols.get(); j++) {
-                structuredData[i][j] = data[k++];
+        for (int i = 0; i < numCols.get(); i++) {
+            for (int j = 0; j < numRows.get(); j++) {
+                structuredData[j][i] = data[k++];
             }
         }
 
         this.matrix = numCols.get() == 0 ? new DenseMatrix(0, 0) : new DenseMatrix(structuredData);
+    }
+
+    public void setMatrix(DenseMatrix matrix) {
+        this.matrix = matrix;
+    }
+
+    public DenseMatrix getMatrix() {
+        return matrix;
+    }
+
+    public void add(DenseMatrixWritable other) {
+        this.matrix.add((Matrix) other.getMatrix());
     }
 }
