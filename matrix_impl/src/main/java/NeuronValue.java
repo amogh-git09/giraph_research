@@ -10,16 +10,20 @@ import java.io.IOException;
 public class NeuronValue implements WritableComparable {
     DenseVectorWritable activations;
     DenseMatrixWritable weights;
+    DenseVectorWritable output;
 
-    public NeuronValue() {}
-
-    public NeuronValue(DenseVectorWritable activations) {
-        this.activations = activations;
+    public NeuronValue() {
+        this.activations = new DenseVectorWritable();
+        this.weights = new DenseMatrixWritable();
+        this.output = new DenseVectorWritable();
     }
 
-    public NeuronValue(DenseVectorWritable activations, DenseMatrixWritable weights) {
-        this.activations = activations;
-        this.weights = weights;
+    public NeuronValue(DenseVectorWritable activations, DenseMatrixWritable weights,
+                       DenseVectorWritable output) {
+
+        this.activations = activations == null ? new DenseVectorWritable() : activations;
+        this.weights = weights == null ? new DenseMatrixWritable() : weights;
+        this.output = output == null ? new DenseVectorWritable() : output;
     }
 
     @Override
@@ -31,11 +35,21 @@ public class NeuronValue implements WritableComparable {
     public void write(DataOutput dataOutput) throws IOException {
         activations.write(dataOutput);
         weights.write(dataOutput);
+        output.write(dataOutput);
     }
 
     @Override
     public void readFields(DataInput dataInput) throws IOException {
         activations.readFields(dataInput);
         weights.readFields(dataInput);
+        output.readFields(dataInput);
+    }
+
+    public DenseVectorWritable getActivations() {
+        return activations;
+    }
+
+    public DenseVectorWritable getOutput() {
+        return output;
     }
 }

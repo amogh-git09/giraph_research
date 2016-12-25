@@ -10,13 +10,14 @@ import java.io.IOException;
 /**
  * Created by amogh09 on 16/12/19.
  */
-public class DenseMatrixWritable implements Writable{
+public class DenseMatrixWritable implements Writable {
     DenseMatrix matrix;
     private IntWritable numRows, numCols;
 
     public DenseMatrixWritable() {
-        IntWritable numRows = new IntWritable();
-        IntWritable numCols = new IntWritable();
+        this.matrix = new DenseMatrix(0, 0);
+        this.numRows = new IntWritable(0);
+        this.numCols = new IntWritable(0);
     }
 
     public DenseMatrixWritable(DenseMatrix matrix) {
@@ -55,12 +56,12 @@ public class DenseMatrixWritable implements Writable{
         double[][] structuredData = new double[numRows.get()][numCols.get()];
 
         int k = 0;
-        for(int i=0; i<numRows.get(); i++) {
-            for(int j=0; j<numCols.get(); j++) {
+        for (int i = 0; i < numRows.get(); i++) {
+            for (int j = 0; j < numCols.get(); j++) {
                 structuredData[i][j] = data[k++];
             }
         }
 
-        this.matrix = new DenseMatrix(structuredData);
+        this.matrix = numCols.get() == 0 ? new DenseMatrix(0, 0) : new DenseMatrix(structuredData);
     }
 }

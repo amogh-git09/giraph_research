@@ -11,7 +11,7 @@ public class DenseVectorWritable implements Writable {
     DenseVector vector;
 
     public DenseVectorWritable() {
-
+        this.vector = new DenseVector(0);
     }
 
     public DenseVectorWritable(DenseVector v) {
@@ -23,7 +23,7 @@ public class DenseVectorWritable implements Writable {
         double[] data = vector.getData();
         DoubleWritable[] dataWr = new DoubleWritable[data.length];
 
-        for(int i = 0; i < data.length; i++) {
+        for (int i = 0; i < data.length; i++) {
             dataWr[i] = new DoubleWritable(data[i]);
         }
 
@@ -40,7 +40,7 @@ public class DenseVectorWritable implements Writable {
         DoubleWritable[] dataWr = (DoubleWritable[]) array.toArray();
         double[] data = new double[dataWr.length];
 
-        for(int i=0; i<data.length; i++) {
+        for (int i = 0; i < data.length; i++) {
             data[i] = dataWr[i].get();
         }
 
@@ -48,7 +48,7 @@ public class DenseVectorWritable implements Writable {
     }
 
     public void printDoubles(double[] data) {
-        for(int i=0; i<data.length; i++) {
+        for (int i = 0; i < data.length; i++) {
             System.out.print(data[i]);
         }
 
