@@ -11,6 +11,7 @@ import java.util.Random;
 public class NNMasterCompute extends DefaultMasterCompute {
     public static final int HIDDEN_LAYER_GENERATION_STAGE = 0;
     public static final int FORWARD_PROPAGATION_STAGE = 1;
+    public static final int BACKWARD_PROPAGATION_STAGE = 2;
 
     public static final String STAGE_ID = "StageAggregator";
 
@@ -28,7 +29,7 @@ public class NNMasterCompute extends DefaultMasterCompute {
     }
 
     private void registerWeightMatrices() throws IllegalAccessException, InstantiationException {
-        for(int i=1; i<=Config.HIDDEN_LAYER_COUNT; i++) {
+        for(int i = Config.INPUT; i != Config.OUTPUT; i = Backpropagation.getNextLayerNum(i)) {
             String aggName = getWeightAggregatorName(i);
             Logger.d("Registering weight aggregator: " + aggName);
             registerPersistentAggregator(aggName, DenseMatrixWritableSumAggregator.class);
@@ -36,11 +37,11 @@ public class NNMasterCompute extends DefaultMasterCompute {
     }
 
     private void initializeWeightMatrices() {
-        for(int i=1; i<=Config.HIDDEN_LAYER_COUNT; i++) {
+        for(int i = Config.INPUT; i != Config.OUTPUT; i = Backpropagation.getNextLayerNum(i)) {
             String aggName = getWeightAggregatorName(i);
             Logger.d("Initializing " + aggName);
-            DenseMatrix matrix = generateRandomMatrix(Config.ARCHITECTURE[i],
-                    Config.ARCHITECTURE[Backpropagation.getPrevLayerNum(i)]);
+            DenseMatrix matrix = generateRandomMatrix(Config.ARCHITECTURE[
+                    Backpropagation.getNextLayerNum(i)], Config.ARCHITECTURE[i]);
             setAggregatedValue(aggName, new DenseMatrixWritable(matrix));
             Backpropagation.printMatrix(matrix);
         }
@@ -65,3 +66,4 @@ public class NNMasterCompute extends DefaultMasterCompute {
         return new DenseMatrix(data);
     }
 }
+

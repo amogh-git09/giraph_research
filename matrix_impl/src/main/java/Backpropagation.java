@@ -35,7 +35,8 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
                         }
                         break;
 
-                    case Config.OUTPUT:
+                    // OUTPUT LAYER
+                    default:
                         if(dataNum == 1) {
                             aggregate(NNMasterCompute.STAGE_ID, new IntWritable(1));
                         }
@@ -45,29 +46,51 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
                 break;
 
             case NNMasterCompute.FORWARD_PROPAGATION_STAGE:
-                switch (layerNum) {
-                    case Config.INPUT:
-                        forwardPropActivations(vertex, dataNum, layerNum);
-                        vertex.voteToHalt();
-                        break;
+                if (layerNum == Config.OUTPUT) {
+                    int checker = 0;
+                    for(DenseVectorWritable v : messages) {
+                        printVector(v.vector);
+                        vertex.getValue().setActivations(v);
+                        checker++;
+                    }
 
-                    case Config.OUTPUT:
-                        for(DenseVectorWritable v : messages) {
-                            printVector(v.vector);
-                        }
+                    if(checker != 1) {
+                        throw new IllegalStateException("More than one messages received");
+                    }
 
-                        vertex.voteToHalt();
-                        break;
+                    // switch stage
+                    if(dataNum == 1) {
+                        aggregate(NNMasterCompute.STAGE_ID, new IntWritable(1));
+                    }
+                } else {
+                    DenseVector updatedActivations;
+                    switch (layerNum) {
+                        case Config.INPUT:
+                            updatedActivations = getUpdatedActivations(vertex, messages, layerNum);
+                            forwardPropActivations(updatedActivations, dataNum, layerNum);
+                            vertex.voteToHalt();
+                            break;
 
-                    default:
-                        for(DenseVectorWritable v : messages) {
-                            printVector(v.vector);
-                            updateActivations(vertex, messages, layerNum);
-                            forwardPropActivations(vertex, dataNum, layerNum);
-                        }
+                        default:
+                            for(DenseVectorWritable v : messages) {
+                                printVector(v.vector);
+                                vertex.getValue().setActivations(v);
+                                updatedActivations = getUpdatedActivations(vertex, messages, layerNum);
+                                forwardPropActivations(updatedActivations, dataNum, layerNum);
+                            }
 
-                        vertex.voteToHalt();
-                        break;
+                            vertex.voteToHalt();
+                            break;
+                    }
+                }
+                break;
+
+            case NNMasterCompute.BACKWARD_PROPAGATION_STAGE:
+                if (layerNum == Config.OUTPUT) {
+                    DenseVector delta = calculateErrors(vertex, layerNum);
+                    Logger.d("delta:");
+                    printVector(delta);
+                    vertex.voteToHalt();
                 }
                 break;
         }
@@ -75,11 +98,30 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
         Logger.d("\n\n");
     }
 
-    private boolean updateActivations(Vertex<Text, NeuronValue, NullWritable> vertex,
-                                   Iterable<DenseVectorWritable> messages, int layerNum) {
+    private DenseVector calculateErrors(Vertex<Text, NeuronValue, NullWritable> vertex,
+                                        int layerNum) {
+
+        Vector delta = new DenseVector(Config.ARCHITECTURE[layerNum]);
+
+        if(layerNum == Config.OUTPUT) {
+            NeuronValue val = vertex.getValue();
+            Vector activations = new DenseVector(val.getActivations().vector);
+            delta = activations.add(-1d, (Vector) val.getOutput().vector);
+        }
+
+        return (DenseVector) delta;
+    }
+
+    private DenseVector getUpdatedActivations(Vertex<Text, NeuronValue, NullWritable> vertex,
+                                              Iterable<DenseVectorWritable> messages, int layerNum) {
 
         DenseVector input = null;
-        DenseMatrix theta = vertex.getValue().getWeights().getMatrix();
+//        DenseMatrix theta = vertex.getValue().getWeights().getMatrix();
+
+        String aggName = NNMasterCompute.getWeightAggregatorName(layerNum);
+        DenseMatrixWritable thetaWr = getAggregatedValue(aggName);
+        DenseMatrix theta = thetaWr.getMatrix();
+
         int checker = 0;
 
         for (DenseVectorWritable m : messages) {
@@ -88,35 +130,44 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
         }
 
         if(checker == 1) {
-            Vector activations = new DenseVector(Config.ARCHITECTURE[layerNum]);
+            Vector activations = new DenseVector(Config.ARCHITECTURE[getNextLayerNum(layerNum)]);
             activations = theta.mult(input, activations);
-            vertex.getValue().setActivations(new DenseVectorWritable((DenseVector) activations));
+            sigmoid(activations);
             Logger.d("Updated activations:");
-            printVector(vertex.getValue().getActivations().vector);
-            return true;
+            printVector(activations);
+            return (DenseVector) activations;
         } else if (checker == 0) {
-            return false;
+            //input layer
+            Vector activations = new DenseVector(Config.ARCHITECTURE[getNextLayerNum(layerNum)]);
+            activations = theta.mult(vertex.getValue().getActivations().vector, activations);
+            sigmoid(activations);
+            Logger.d("Updated activations:");
+            printVector(activations);
+            return (DenseVector) activations;
         } else {
             throw new IllegalStateException("More than 1 message received");
         }
     }
 
-    private void forwardPropActivations(Vertex<Text, NeuronValue, NullWritable> vertex, int dataNum,
+    private void forwardPropActivations(DenseVector activations, int dataNum,
                                         int layerNum) {
 
         Text dstId = Config.getVertexId(dataNum, getNextLayerNum(layerNum));
-        sendMessage(dstId, vertex.getValue().getActivations());
+        sendMessage(dstId, new DenseVectorWritable(activations));
         Logger.d("forward propagating vector to " + dstId.toString());
     }
 
     private void generateHiddenLayer(int dataNum, int layerNum) throws IOException {
-        DenseMatrixWritable matrix = getAggregatedValue(NNMasterCompute.getWeightAggregatorName(layerNum));
-        NeuronValue val = new NeuronValue(null, matrix, null);
+//        DenseMatrixWritable matrix = getAggregatedValue(NNMasterCompute.getWeightAggregatorName(layerNum));
+//        NeuronValue val = new NeuronValue(null, matrix, null);
+
+        NeuronValue val = new NeuronValue(null, null, null);
+
         Text id = Config.getVertexId(dataNum, layerNum);
         addVertexRequest(id, val);
         Logger.d("adding vertex: " + id.toString());
         Logger.d("weights: ");
-        printMatrix(matrix.getMatrix());
+//        printMatrix(matrix.getMatrix());
     }
 
     public static void printMatrix(DenseMatrix m) {
@@ -131,7 +182,7 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
         }
     }
 
-    private void printVector(DenseVector v) {
+    private void printVector(Vector v) {
         if(Logger.DEBUG) {
             StringBuilder str = new StringBuilder();
             for (int i = 0; i < v.size(); i++) {
@@ -142,25 +193,21 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
     }
 
     public static int getNextLayerNum(int layerNum) {
-        switch (layerNum) {
-            case Config.OUTPUT:
-                return Config.INPUT;
-            case Config.INPUT + Config.HIDDEN_LAYER_COUNT:
-                return Config.OUTPUT;
-            default:
-                return layerNum + 1;
-        }
+        if(layerNum == Config.OUTPUT)
+            return Config.INPUT;
+        else if (layerNum == Config.INPUT + Config.HIDDEN_LAYER_COUNT)
+            return Config.OUTPUT;
+        else
+            return layerNum + 1;
     }
 
     public static int getPrevLayerNum(int layerNum) {
-        switch (layerNum) {
-            case Config.INPUT:
-                return Config.OUTPUT;
-            case Config.OUTPUT:
-                return Config.INPUT + Config.HIDDEN_LAYER_COUNT;
-            default:
-                return layerNum - 1;
-        }
+        if(layerNum == Config.INPUT)
+            return Config.OUTPUT;
+        else if(layerNum == Config.OUTPUT)
+            return Config.INPUT + Config.HIDDEN_LAYER_COUNT;
+        else
+            return layerNum - 1;
     }
 
     private static DenseMatrix generateRandomMatrix(int rows, int cols) {
@@ -198,5 +245,16 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
         stringBuilder.append("\n");
 
         Logger.d(stringBuilder.toString());
+    }
+
+    private static void sigmoid(Vector vector) {
+        for(int i = 0; i < vector.size(); i++) {
+            double value = vector.get(i);
+            vector.set(i, sigmoid(value));
+        }
+    }
+
+    private static double sigmoid(double x) {
+        return (1/( 1 + Math.pow(Math.E,(-1*x))));
     }
 }
