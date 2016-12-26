@@ -69,6 +69,8 @@ public class DenseMatrixWritable implements Writable {
 
     public void setMatrix(DenseMatrix matrix) {
         this.matrix = matrix;
+        this.numRows = new IntWritable(matrix.numRows());
+        this.numCols = new IntWritable(matrix.numColumns());
     }
 
     public DenseMatrix getMatrix() {

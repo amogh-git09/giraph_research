@@ -24,6 +24,7 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
         int layerNum = Config.getLayerNum(vertex.getId());
         IntWritable stage = getAggregatedValue(NNMasterCompute.STAGE_ID);
         Logger.d("\n\nVertex Id: " + vertex.getId() + ",  SS: " + getSuperstep());
+        Logger.d("Stage: " + stage.get());
 
         switch (stage.get()) {
             case NNMasterCompute.HIDDEN_LAYER_GENERATION_STAGE:
@@ -54,20 +55,15 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
                         for(DenseVectorWritable v : messages) {
                             printVector(v.vector);
                         }
+
                         vertex.voteToHalt();
                         break;
 
                     default:
                         for(DenseVectorWritable v : messages) {
                             printVector(v.vector);
-
-                            // update activations
                             updateActivations(vertex, messages, layerNum);
-
                             forwardPropActivations(vertex, dataNum, layerNum);
-
-                            aggregate(NNMasterCompute.getWeightAggregatorName(layerNum),
-                                    vertex.getValue().getWeights());
                         }
 
                         vertex.voteToHalt();
@@ -75,6 +71,8 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
                 }
                 break;
         }
+
+        Logger.d("\n\n");
     }
 
     private boolean updateActivations(Vertex<Text, NeuronValue, NullWritable> vertex,
