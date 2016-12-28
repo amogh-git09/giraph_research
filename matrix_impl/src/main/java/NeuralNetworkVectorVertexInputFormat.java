@@ -64,12 +64,14 @@ public class NeuralNetworkVectorVertexInputFormat extends VertexInputFormat<Text
                 dataNum += 1;
                 String[] tokens = line.toString().split(",");
                 int len = tokens.length;
+                Config.INPUT_LAYER_NEURON_COUNT = len;
                 classNum = Integer.parseInt(tokens[len - 1]);
                 Text id = Config.getVertexId(dataNum, layer);
 
-                double[] data = new double[len - 1];
-                for(int i=0; i<len-1; i++) {
-                    data[i] = Double.parseDouble(tokens[i]);
+                double[] data = new double[len];
+                data[0] = 1d;
+                for(int i=1; i<len; i++) {
+                    data[i] = Double.parseDouble(tokens[i-1]);
                 }
                 DenseVectorWritable vec = new DenseVectorWritable(new DenseVector(data));
                 NeuronValue val = new NeuronValue(vec, null, null);
@@ -83,7 +85,10 @@ public class NeuralNetworkVectorVertexInputFormat extends VertexInputFormat<Text
                 double[] data = new double[Config.OUTPUT_LAYER_NEURON_COUNT];
 
                 for(int i=0; i<Config.OUTPUT_LAYER_NEURON_COUNT; i++) {
-                    data[i] = i == classNum ? 1d : 0d;
+                    if(data.length == 1)
+                        data[i] = i == classNum ? 0d : 1d;
+                    else
+                        data[i] = i == classNum ? 1d : 0d;
                 }
 
                 Text id = new Text(Config.getVertexId(dataNum, Config.OUTPUT));

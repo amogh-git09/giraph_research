@@ -22,7 +22,7 @@ public class DenseMatrixWritableSumAggregator extends BasicAggregator<DenseMatri
                 getAggregatedValue().setMatrix(preserve);
             }
         } else if(selfSize != otherSize) {
-            throw new IllegalArgumentException(String.format("selfSize != otherSize, % != %d",
+            throw new IllegalArgumentException(String.format("selfSize != otherSize, %d != %d",
                     selfSize, otherSize));
         } else {
             getAggregatedValue().add(value);

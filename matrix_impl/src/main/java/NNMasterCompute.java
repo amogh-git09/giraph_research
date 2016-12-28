@@ -1,4 +1,5 @@
 import no.uib.cipr.matrix.DenseMatrix;
+import org.apache.giraph.aggregators.DoubleSumAggregator;
 import org.apache.giraph.aggregators.IntSumAggregator;
 import org.apache.giraph.master.DefaultMasterCompute;
 import org.apache.hadoop.io.IntWritable;
@@ -14,17 +15,29 @@ public class NNMasterCompute extends DefaultMasterCompute {
     public static final int BACKWARD_PROPAGATION_STAGE = 2;
 
     public static final String STAGE_ID = "StageAggregator";
+    public static final String COST_ID = "CostAggregator";
+    public static final String DATANUM_ID = "DataAggregator";
+
+    int MAX_ITER = 50;
 
     @Override
     public void compute() {
+        if(getSuperstep() > MAX_ITER) {
+            haltComputation();
+        }
     }
 
     @Override
     public void initialize() throws InstantiationException, IllegalAccessException {
         registerPersistentAggregator(STAGE_ID, IntSumAggregator.class);
+        registerPersistentAggregator(COST_ID, DoubleSumAggregator.class);
+        registerPersistentAggregator(DATANUM_ID, IntSumAggregator.class);
 
         registerWeightMatrices();
+        registerDeltaMatrices();
+
         initializeWeightMatrices();
+        initializeDeltaMatrices();
         setAggregatedValue(STAGE_ID, new IntWritable(HIDDEN_LAYER_GENERATION_STAGE));
     }
 
@@ -39,11 +52,32 @@ public class NNMasterCompute extends DefaultMasterCompute {
     private void initializeWeightMatrices() {
         for(int i = Config.INPUT; i != Config.OUTPUT; i = Backpropagation.getNextLayerNum(i)) {
             String aggName = getWeightAggregatorName(i);
-            Logger.d("Initializing " + aggName);
-            DenseMatrix matrix = generateRandomMatrix(Config.ARCHITECTURE[
-                    Backpropagation.getNextLayerNum(i)], Config.ARCHITECTURE[i]);
+            int rows = Backpropagation.getNextLayerNeuronCount(i);
+            int cols = Backpropagation.getNeuronCount(i);
+            DenseMatrix matrix = generateRandomMatrix(Backpropagation.getNextLayerNeuronCount(i),
+                    Backpropagation.getNeuronCount(i));
+            Logger.d(String.format("Fetching rand matrix of size %dx%d", rows, cols));
             setAggregatedValue(aggName, new DenseMatrixWritable(matrix));
             Backpropagation.printMatrix(matrix);
+        }
+    }
+
+    private void registerDeltaMatrices() throws IllegalAccessException, InstantiationException {
+        for(int i = Config.INPUT; i != Config.OUTPUT; i = Backpropagation.getNextLayerNum(i)) {
+            String aggName = getDeltaAggregatorName(i);
+            registerPersistentAggregator(aggName, DenseMatrixWritableSumAggregator.class);
+        }
+    }
+
+    private void initializeDeltaMatrices() {
+        for(int i = Config.INPUT; i != Config.OUTPUT; i = Backpropagation.getNextLayerNum(i)) {
+            String aggName = getDeltaAggregatorName(i);
+            int rows = Backpropagation.getNextLayerNeuronCount(i);
+            int cols = Backpropagation.getNeuronCount(i);
+            DenseMatrix matrix = new DenseMatrix(rows, cols);
+            Logger.d(String.format("Registering %s with size %dx%d", aggName, rows, cols));
+            Backpropagation.printMatrix(matrix);
+            setAggregatedValue(aggName, new DenseMatrixWritable(matrix));
         }
     }
 
@@ -51,11 +85,28 @@ public class NNMasterCompute extends DefaultMasterCompute {
         return String.format("WeightAggregator%s%d", Config.DELIMITER, layerNum);
     }
 
+    public static String getDeltaAggregatorName(int layerNum) {
+        return String.format("DeltaAggregator%s%d", Config.DELIMITER, layerNum);
+    }
+
     private static DenseMatrix generateRandomMatrix(int rows, int cols) {
         double min = - Config.EPSILON;
         double max = Config.EPSILON;
         Random r = new Random();
         double[][] data = new double[rows][cols];
+
+        if (Config.TESTING) {
+            if(rows == 3) {
+                double[][] testData = {{1, 1, 1},
+                        {-0.051, 0.003, 0.071},
+                        {0.002, 0.016, 0.049}};
+                return new DenseMatrix(testData);
+            }
+            else if(rows == 1) {
+                double[][] testData = {{0.012, -0.163, 0.058}};
+                return new DenseMatrix(testData);
+            }
+        }
 
         for(int i=0; i<rows; i++) {
             for(int j=0; j<cols; j++) {
