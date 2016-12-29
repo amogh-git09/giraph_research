@@ -13,12 +13,13 @@ public class NNMasterCompute extends DefaultMasterCompute {
     public static final int HIDDEN_LAYER_GENERATION_STAGE = 0;
     public static final int FORWARD_PROPAGATION_STAGE = 1;
     public static final int BACKWARD_PROPAGATION_STAGE = 2;
+    public static final int WEIGHT_UPDATE_STAGE = 3;
 
     public static final String STAGE_ID = "StageAggregator";
     public static final String COST_ID = "CostAggregator";
     public static final String DATANUM_ID = "DataAggregator";
 
-    int MAX_ITER = 50;
+    int MAX_ITER = 500;
 
     @Override
     public void compute() {

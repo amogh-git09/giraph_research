@@ -65,13 +65,13 @@ Theta2_grad = zeros(size(Theta2));
 K = num_labels;
 Y = y;
 
-a1 = [ones(m, 1), X]
-z2 = a1 * Theta1'
+a1 = [ones(m, 1), X];
+z2 = a1 * Theta1';
 a2 = sigmoid(z2);
-a2 = [ones(size(a2, 1), 1), a2]
+a2 = [ones(size(a2, 1), 1), a2];
 
-z3 = a2 * Theta2'
-a3 = sigmoid(z3)
+z3 = a2 * Theta2';
+a3 = sigmoid(z3);
 
 cost = sum((-Y .* log(a3)) - ((1 - Y) .* log(1 - a3)), 2);
 J = (1 / m) * sum(cost);
@@ -91,18 +91,18 @@ for t = 1:m
 	z2 = Theta1 * a1;
 	a2 = [1; sigmoid(z2)]; % Including Bias
 
-	z3 = Theta2 * a2
-	a3 = sigmoid(z3)
+	z3 = Theta2 * a2;
+	a3 = sigmoid(z3);
 
 	% Step 2 - Delta Output Layer
-	d3 = a3 - Y(t, :)'
+	d3 = a3 - Y(t, :)';
 
 	% Step 3 - Delta Hidden Layer
-	d2 = (Theta2NoBias' * d3) .* sigmoidGradient(z2)
+	d2 = (Theta2NoBias' * d3) .* sigmoidGradient(z2);
 
 	% Step 4 - Accumulate
-	Delta2 += (d3 * a2')
-	Delta1 += (d2 * a1')
+	Delta2 += (d3 * a2');
+	Delta1 += (d2 * a1');
 endfor
 
 Delta1;

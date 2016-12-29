@@ -8,6 +8,7 @@ public class Config {
     public static final int OUTPUT_LAYER_NEURON_COUNT = 1;
     public static final String DELIMITER = ":";
     public static final double EPSILON = 0.5;
+    public static final double LEARNING_RATE = 0.05;
 
     public static final int[] ARCHITECTURE = {
             INPUT_LAYER_NEURON_COUNT, 3, OUTPUT_LAYER_NEURON_COUNT};

@@ -5,7 +5,6 @@ import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
-import org.python.antlr.op.Del;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -62,13 +61,18 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
                         throw new IllegalStateException("More than one messages received");
                     }
 
-                    Logger.i("Cost = " +
-                            (((DoubleWritable) getAggregatedValue(NNMasterCompute.COST_ID)).get()));
+                    IntWritable m = getAggregatedValue(NNMasterCompute.DATANUM_ID);
+                    if(dataNum == 1) {
+                        Logger.i("Cost = " +
+                                (((DoubleWritable) getAggregatedValue(NNMasterCompute.COST_ID)).get())/m.get());
+                    }
 
                     //find cost
                     double cost = cost(vertex);
-                    aggregate(NNMasterCompute.COST_ID, new DoubleWritable(
-                            ((DoubleWritable) getAggregatedValue(NNMasterCompute.COST_ID)).get()));
+                    if(dataNum == 1) {
+                        aggregate(NNMasterCompute.COST_ID, new DoubleWritable(
+                                -((DoubleWritable) getAggregatedValue(NNMasterCompute.COST_ID)).get()));
+                    }
                     aggregate(NNMasterCompute.COST_ID, new DoubleWritable(cost));
 
                     // switch stage
@@ -101,37 +105,55 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
             case NNMasterCompute.BACKWARD_PROPAGATION_STAGE:
                 if (layerNum != Config.INPUT) {
                     DenseVector delta = calculateErrors(vertex, messages, layerNum);
-                    Logger.d("delta:");
-                    printVector(delta);
-
-                    if(!isLastHiddenLayer(layerNum)) {
-                        String aggName = NNMasterCompute.getDeltaAggregatorName(getNextLayerNum(layerNum));
-                        Logger.d(String.format("%s", aggName));
-                        DenseMatrixWritable DeltaWr = getAggregatedValue(aggName);
-                        printMatrix(DeltaWr.getMatrix());
-                    }
-
+                    calcAndAggDelta(vertex, messages, dataNum, layerNum);
                     backpropError(dataNum, layerNum, delta);
                     vertex.voteToHalt();
                 } else {
-                    DenseMatrixWritable DeltaWr = getAggregatedValue(NNMasterCompute.getDeltaAggregatorName(getNextLayerNum(layerNum)));
-                    Logger.d("Delta for layer: " + getNextLayerNum(layerNum));
-                    printMatrix(DeltaWr.getMatrix());
+                    calcAndAggDelta(vertex, messages, dataNum, layerNum);
+                    if(dataNum == 1)
+                        aggregate(NNMasterCompute.STAGE_ID, new IntWritable(1));
+                }
 
-                    aggregate(NNMasterCompute.STAGE_ID, new IntWritable(-stage.get()));
-                    aggregate(NNMasterCompute.STAGE_ID, new IntWritable(NNMasterCompute.FORWARD_PROPAGATION_STAGE));
+                if(!isLastHiddenLayer(layerNum)) {
+                    String aggName = NNMasterCompute.getDeltaAggregatorName(getNextLayerNum(layerNum));
+                    Logger.d("Delta for layer: " + getNextLayerNum(layerNum));
+                    Logger.d(String.format("%s", aggName));
+                    DenseMatrixWritable DeltaWr = getAggregatedValue(aggName);
+                    printMatrix(DeltaWr.getMatrix());
                 }
                 break;
 
             case NNMasterCompute.WEIGHT_UPDATE_STAGE:
                 if (layerNum == Config.OUTPUT) {
+                    if(dataNum == 1) {
+                        aggregate(NNMasterCompute.STAGE_ID, new IntWritable(-stage.get()));
+                        aggregate(NNMasterCompute.STAGE_ID, new IntWritable(NNMasterCompute.FORWARD_PROPAGATION_STAGE));
+                        turnLayerToActive(Config.INPUT);
+                    }
 
+                    vertex.voteToHalt();
                 } else {
-                    IntWritable m = getAggregatedValue(NNMasterCompute.DATANUM_ID);
-                    String aggName = NNMasterCompute.getDeltaAggregatorName(layerNum);
-                    DenseMatrixWritable Delta = getAggregatedValue(aggName);
-                    DenseMatrix gradients = new DenseMatrix(Delta.getNumRows(), Delta.getNumCols());
-                    gradients = Delta.multAdd((1d/m.get(), Delta, )
+                    if(dataNum == 1) {
+                        IntWritable m = getAggregatedValue(NNMasterCompute.DATANUM_ID);
+                        String aggName = NNMasterCompute.getDeltaAggregatorName(layerNum);
+                        DenseMatrixWritable Delta = getAggregatedValue(aggName);
+                        Matrix gradients = new DenseMatrix(Delta.getMatrix());
+                        gradients = gradients.scale(-Config.LEARNING_RATE * 1d / m.get());
+
+                        Logger.d("Updating weights");
+                        Logger.d("m = " + m.get());
+                        Logger.d("Delta:");
+                        printMatrix(Delta.getMatrix());
+                        Logger.d("gradient matrix:");
+                        printMatrix(gradients);
+
+                        String weightAggName = NNMasterCompute.getWeightAggregatorName(layerNum);
+                        aggregate(weightAggName, new DenseMatrixWritable((DenseMatrix) gradients));
+                    }
+
+                    Text dstId = Config.getVertexId(dataNum, getNextLayerNum(layerNum));
+                    sendMessage(dstId, new DenseVectorWritable());
+                    vertex.voteToHalt();
                 }
                 break;
         }
@@ -161,6 +183,43 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
         printVector(delta);
     }
 
+    private void calcAndAggDelta(Vertex<Text, NeuronValue, NullWritable> vertex,
+                                 Iterable<DenseVectorWritable> messages, int dataNum,
+                                 int layerNum) {
+
+        for(DenseVectorWritable v : messages) {
+            // Delta += activations * incoming_delta
+            DenseVector activations = vertex.getValue().getActivations().vector;
+            Matrix deltaM = new DenseMatrix(v.vector);
+            Matrix activationsM = new DenseMatrix(activations);
+            Matrix Delta = new DenseMatrix(deltaM.numRows(), activationsM.numRows());
+            Logger.d("Calculating Delta, Multiplying:");
+            printMatrix(deltaM);
+            Logger.d("with transpose of:");
+            printMatrix(activationsM);
+            Delta = deltaM.transBmult(activationsM, Delta);
+            Logger.d("Result:");
+            printMatrix(Delta);
+
+            String deltaAggName = NNMasterCompute.getDeltaAggregatorName(layerNum);
+
+            //flush if required
+            if(dataNum == 1) {
+                DenseMatrixWritable aggDelta = getAggregatedValue(deltaAggName);
+                Matrix negDelta = new DenseMatrix(aggDelta.getMatrix());
+                negDelta = negDelta.scale(-1d);
+                Logger.d("Flushing " + deltaAggName + ":");
+                printMatrix(aggDelta.getMatrix());
+                Logger.d("Using:");
+                printMatrix(negDelta);
+                aggregate(deltaAggName, new DenseMatrixWritable((DenseMatrix) negDelta));
+            }
+
+            Logger.d("Aggregating result to " + deltaAggName);
+            aggregate(deltaAggName, new DenseMatrixWritable((DenseMatrix) Delta));
+        }
+    }
+
     private DenseVector calculateErrors(Vertex<Text, NeuronValue, NullWritable> vertex,
                                         Iterable<DenseVectorWritable> messages,
                                         int layerNum) {
@@ -175,6 +234,8 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
             Logger.d("----------------");
             printVector(val.getOutput().vector);
             delta = activations.add(-1d, (Vector) val.getOutput().vector);
+            Logger.d("Result (delta):");
+            printVector(delta);
         } else {
             int checker = 0;
             for(DenseVectorWritable v : messages) {
@@ -189,22 +250,8 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
                     elem.set(elem.get() * activation * (1 - activation));
                 }
 
-                // Delta += activations * incoming_delta
-                Matrix deltaM = new DenseMatrix(v.vector);
-                Matrix activationsM = new DenseMatrix(activations);
-                Matrix Delta = new DenseMatrix(deltaM.numRows(), activationsM.numRows());
-                Logger.d("Multiplying:");
-                printMatrix(deltaM);
-                Logger.d("with transpose of:");
-                printMatrix(activationsM);
-                Delta = deltaM.transBmult(activationsM, Delta);
-                Logger.d("Result:");
-                printMatrix(Delta);
-
-                String deltaAggName = NNMasterCompute.getDeltaAggregatorName(layerNum);
-                Logger.d("Aggregating result to " + deltaAggName);
-                aggregate(deltaAggName, new DenseMatrixWritable((DenseMatrix) Delta));
-
+                Logger.d("Calculated delta (error) vector");
+                printVector(delta);
                 checker++;
             }
 
@@ -226,6 +273,8 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
         DenseMatrixWritable thetaWr = getAggregatedValue(aggName);
         DenseMatrix theta = thetaWr.getMatrix();
 
+        Logger.d("Calculating activations ");
+
         int checker = 0;
 
         for (DenseVectorWritable m : messages) {
@@ -233,13 +282,17 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
             checker++;
         }
 
-        if(checker == 1) {
+        if (checker > 1) {
+            throw new IllegalStateException("More than 1 message received");
+        }
+
+        if(layerNum != Config.INPUT) {
             int nextLayerNeuronCount = getNextLayerNeuronCount(layerNum);
 
             Vector activations = new DenseVector(nextLayerNeuronCount);
-            Logger.d("Multiplying:");
+            Logger.d("Multiplying Theta:");
             printMatrix(theta);
-            Logger.d("-----------");
+            Logger.d("With activations of prev layer");
             printVector(input);
             activations = theta.mult(input, activations);
 
@@ -254,7 +307,7 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
 
             printVector(activations);
             return (DenseVector) activations;
-        } else if (checker == 0) {
+        } else {
             //input layer
             Vector activations = new DenseVector(getNextLayerNeuronCount(layerNum));
             input = vertex.getValue().getActivations().vector;
@@ -274,8 +327,6 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
             activations.set(0, 1d);
             printVector(activations);
             return (DenseVector) activations;
-        } else {
-            throw new IllegalStateException("More than 1 message received");
         }
     }
 
