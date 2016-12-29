@@ -18,12 +18,17 @@ public class NNMasterCompute extends DefaultMasterCompute {
     public static final String STAGE_ID = "StageAggregator";
     public static final String COST_ID = "CostAggregator";
     public static final String DATANUM_ID = "DataAggregator";
+    public static final String ITERATION_ID = "IterAggregator";
 
-    int MAX_ITER = 500;
+    int MAX_ITER = 100;
 
     @Override
     public void compute() {
-        if(getSuperstep() > MAX_ITER) {
+        IntWritable iterations = getAggregatedValue(ITERATION_ID);
+
+        if(iterations.get() > MAX_ITER) {
+            IntWritable dataSize = getAggregatedValue(DATANUM_ID);
+            Logger.i("DataSize = " + dataSize.get() + " instances");
             haltComputation();
         }
     }
@@ -33,6 +38,7 @@ public class NNMasterCompute extends DefaultMasterCompute {
         registerPersistentAggregator(STAGE_ID, IntSumAggregator.class);
         registerPersistentAggregator(COST_ID, DoubleSumAggregator.class);
         registerPersistentAggregator(DATANUM_ID, IntSumAggregator.class);
+        registerPersistentAggregator(ITERATION_ID, IntSumAggregator.class);
 
         registerWeightMatrices();
         registerDeltaMatrices();

@@ -61,17 +61,17 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
                         throw new IllegalStateException("More than one messages received");
                     }
 
-                    IntWritable m = getAggregatedValue(NNMasterCompute.DATANUM_ID);
-                    if(dataNum == 1) {
-                        Logger.i("Cost = " +
-                                (((DoubleWritable) getAggregatedValue(NNMasterCompute.COST_ID)).get())/m.get());
-                    }
-
                     //find cost
                     double cost = cost(vertex);
                     if(dataNum == 1) {
+                        IntWritable m = getAggregatedValue(NNMasterCompute.DATANUM_ID);
+                        IntWritable iteration = getAggregatedValue(NNMasterCompute.ITERATION_ID);
+                        Logger.i(String.format("Iteration: %d, Cost: %f", iteration.get(),
+                                (((DoubleWritable) getAggregatedValue(NNMasterCompute.COST_ID)).get())/m.get()));
                         aggregate(NNMasterCompute.COST_ID, new DoubleWritable(
                                 -((DoubleWritable) getAggregatedValue(NNMasterCompute.COST_ID)).get()));
+
+                        aggregate(NNMasterCompute.ITERATION_ID, new IntWritable(1));
                     }
                     aggregate(NNMasterCompute.COST_ID, new DoubleWritable(cost));
 

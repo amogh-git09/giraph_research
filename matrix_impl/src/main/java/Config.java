@@ -4,14 +4,14 @@ import org.apache.hadoop.io.Text;
  * Created by amogh09 on 16/12/24.
  */
 public class Config {
-    public static int INPUT_LAYER_NEURON_COUNT = 3;
-    public static final int OUTPUT_LAYER_NEURON_COUNT = 1;
     public static final String DELIMITER = ":";
     public static final double EPSILON = 0.5;
     public static final double LEARNING_RATE = 0.05;
 
+    public static int INPUT_LAYER_NEURON_COUNT = 8;     //including bias
+    public static final int OUTPUT_LAYER_NEURON_COUNT = 29;
     public static final int[] ARCHITECTURE = {
-            INPUT_LAYER_NEURON_COUNT, 3, OUTPUT_LAYER_NEURON_COUNT};
+            INPUT_LAYER_NEURON_COUNT, 7, OUTPUT_LAYER_NEURON_COUNT};
     public static final boolean TESTING = true;
 
     public static final int INPUT = 0;
