@@ -20,15 +20,20 @@ public class NNMasterCompute extends DefaultMasterCompute {
     public static final String DATANUM_ID = "DataAggregator";
     public static final String ITERATION_ID = "IterAggregator";
 
-    int MAX_ITER = 100;
+    int MAX_ITER = 4;
 
     @Override
     public void compute() {
         IntWritable iterations = getAggregatedValue(ITERATION_ID);
 
+        if(getSuperstep() == 0) {
+            Logger.i("DataSize = " + Config.dataSize);
+        }
+
         if(iterations.get() > MAX_ITER) {
+            Logger.i("Superstep: " + getSuperstep());
             IntWritable dataSize = getAggregatedValue(DATANUM_ID);
-            Logger.i("DataSize = " + dataSize.get() + " instances");
+            Logger.p("DataSize = " + dataSize.get() + " instances");
             haltComputation();
         }
     }

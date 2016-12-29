@@ -26,6 +26,15 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
         Logger.d("\n\nVertex Id: " + vertex.getId() + ",  SS: " + getSuperstep());
         Logger.d("Stage: " + stage.get());
 
+        if(getSuperstep() == 0) {
+            if(layerNum == Config.OUTPUT) {
+                Logger.i(String.format("%d of %d", (++Config.checker), Config.dataSize));
+                aggregate(NNMasterCompute.DATANUM_ID, new IntWritable(1));
+            } else if(layerNum != Config.INPUT) {
+                throw new IllegalStateException(String.format("unexpected layerNum: %d", layerNum));
+            }
+        }
+
         switch (stage.get()) {
             case NNMasterCompute.HIDDEN_LAYER_GENERATION_STAGE:
                 switch (layerNum) {
@@ -42,7 +51,6 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
                             aggregate(NNMasterCompute.STAGE_ID, new IntWritable(1));
                         }
 
-                        aggregate(NNMasterCompute.DATANUM_ID, new IntWritable(1));
                         vertex.voteToHalt();
                         break;
                 }
@@ -66,7 +74,7 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
                     if(dataNum == 1) {
                         IntWritable m = getAggregatedValue(NNMasterCompute.DATANUM_ID);
                         IntWritable iteration = getAggregatedValue(NNMasterCompute.ITERATION_ID);
-                        Logger.i(String.format("Iteration: %d, Cost: %f", iteration.get(),
+                        Logger.i(String.format("Iteration: %3d, Cost: %f", iteration.get(),
                                 (((DoubleWritable) getAggregatedValue(NNMasterCompute.COST_ID)).get())/m.get()));
                         aggregate(NNMasterCompute.COST_ID, new DoubleWritable(
                                 -((DoubleWritable) getAggregatedValue(NNMasterCompute.COST_ID)).get()));
@@ -342,7 +350,7 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
 //        DenseMatrixWritable matrix = getAggregatedValue(NNMasterCompute.getWeightAggregatorName(layerNum));
 //        NeuronValue val = new NeuronValue(null, matrix, null);
 
-        NeuronValue val = new NeuronValue(null, null, null);
+        NeuronValue val = new NeuronValue(null, null);
 
         Text id = Config.getVertexId(dataNum, layerNum);
         addVertexRequest(id, val);

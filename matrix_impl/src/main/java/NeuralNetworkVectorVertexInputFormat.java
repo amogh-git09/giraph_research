@@ -65,6 +65,12 @@ public class NeuralNetworkVectorVertexInputFormat extends VertexInputFormat<Text
                 String[] tokens = line.toString().split(",");
                 int len = tokens.length;
                 Config.INPUT_LAYER_NEURON_COUNT = len;
+
+                if(len != Config.INPUT_LAYER_NEURON_COUNT) {
+                    throw new IllegalArgumentException(String.format("Expected %d features, found %d",
+                            Config.INPUT_LAYER_NEURON_COUNT, len));
+                }
+
                 classNum = Integer.parseInt(tokens[len - 1]);
                 Text id = Config.getVertexId(dataNum, layer);
 
@@ -74,12 +80,14 @@ public class NeuralNetworkVectorVertexInputFormat extends VertexInputFormat<Text
                     data[i] = Double.parseDouble(tokens[i-1]);
                 }
                 DenseVectorWritable vec = new DenseVectorWritable(new DenseVector(data));
-                NeuronValue val = new NeuronValue(vec, null, null);
+                NeuronValue val = new NeuronValue(vec, null);
                 Vertex<Text, NeuronValue, NullWritable> vertex = getConf().createVertex();
                 vertex.initialize(id, val);
 
                 layer = Config.OUTPUT;
                 currentVertex = vertex;
+
+                Config.dataSize++;
                 return true;
             } else {
                 double[] data = new double[Config.OUTPUT_LAYER_NEURON_COUNT];
@@ -93,7 +101,7 @@ public class NeuralNetworkVectorVertexInputFormat extends VertexInputFormat<Text
 
                 Text id = new Text(Config.getVertexId(dataNum, Config.OUTPUT));
                 DenseVectorWritable vec = new DenseVectorWritable(new DenseVector(data));
-                NeuronValue val = new NeuronValue(null, null, vec);
+                NeuronValue val = new NeuronValue(null, vec);
                 Vertex<Text, NeuronValue, NullWritable> vertex = getConf().createVertex();
                 vertex.initialize(id, val);
 
