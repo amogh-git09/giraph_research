@@ -21,9 +21,14 @@ import java.util.List;
  */
 public class NeuralNetworkVectorVertexInputFormat extends VertexInputFormat<Text, NeuronValue, NullWritable>{
     GiraphTextInputFormat inputFormat = new GiraphTextInputFormat();
+    private int layer = 0;  // 0 for input, 1 for output
+    private int dataNum = 0;
+    private int classNum = -1;
+    private int count = 0;
 
     @Override
     public VertexReader<Text, NeuronValue, NullWritable> createVertexReader(InputSplit split, TaskAttemptContext context) throws IOException {
+        Logger.i("Making new NeuralNetworkVertexReader");
         return new NeuralNetworkVertexReader();
     }
 
@@ -40,9 +45,6 @@ public class NeuralNetworkVectorVertexInputFormat extends VertexInputFormat<Text
     public class NeuralNetworkVertexReader extends VertexReader<Text, NeuronValue, NullWritable> {
         private TaskAttemptContext context;
         private RecordReader<LongWritable, Text> lineRecordReader;
-        private int layer = 0;  // 0 for input, 1 for output
-        private int dataNum = 0;
-        private int classNum = -1;
         private Vertex<Text, NeuronValue, NullWritable> currentVertex;
 
         @Override
@@ -62,6 +64,7 @@ public class NeuralNetworkVectorVertexInputFormat extends VertexInputFormat<Text
                 Text line = lineRecordReader.getCurrentValue();
                 Logger.d("Reading data: " + line.toString());
                 dataNum += 1;
+
                 String[] tokens = line.toString().split(",");
                 int len = tokens.length;
                 Config.INPUT_LAYER_NEURON_COUNT = len;
@@ -73,6 +76,10 @@ public class NeuralNetworkVectorVertexInputFormat extends VertexInputFormat<Text
 
                 classNum = Integer.parseInt(tokens[len - 1]);
                 Text id = Config.getVertexId(dataNum, layer);
+
+                if(dataNum == 1) {
+                    Logger.i("Loading first datum: " + id.toString());
+                }
 
                 double[] data = new double[len];
                 data[0] = 1d;
@@ -88,6 +95,12 @@ public class NeuralNetworkVectorVertexInputFormat extends VertexInputFormat<Text
                 currentVertex = vertex;
 
                 Config.dataSize++;
+                count++;
+
+                if((count + 2000)%2000 == 0) {
+                    Logger.i("Read " + count + " data instances");
+                }
+
                 return true;
             } else {
                 double[] data = new double[Config.OUTPUT_LAYER_NEURON_COUNT];
