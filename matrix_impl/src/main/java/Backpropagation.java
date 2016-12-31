@@ -1,10 +1,12 @@
 import no.uib.cipr.matrix.*;
+import org.apache.giraph.GiraphRunner;
 import org.apache.giraph.graph.BasicComputation;
 import org.apache.giraph.graph.Vertex;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.util.ToolRunner;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -15,6 +17,10 @@ import java.util.Random;
  */
 public class Backpropagation extends BasicComputation<Text, NeuronValue,
         NullWritable, DenseVectorWritable>{
+
+    public static void main(String[] args) throws Exception {
+        System.exit(ToolRunner.run(new GiraphRunner(), args));
+    }
 
     @Override
     public void compute(Vertex<Text, NeuronValue, NullWritable> vertex,
@@ -28,7 +34,7 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
 
         if(getSuperstep() == 0) {
             if(layerNum == Config.OUTPUT) {
-                Logger.i(String.format("%d of %d", (++Config.checker), Config.dataSize));
+//                Logger.i(String.format("%d of %d", (++Config.checker), Config.dataSize));
                 aggregate(NNMasterCompute.DATANUM_ID, new IntWritable(1));
             } else if(layerNum != Config.INPUT) {
                 throw new IllegalStateException(String.format("unexpected layerNum: %d", layerNum));

@@ -10,7 +10,7 @@ task fatJar(type: Jar) {
     manifest {
         attributes 'Implementation-Title': 'Matrix Impl',
                 'Implementation-Version': 1.0,
-                'Main-Class': 'DVWTest'
+                'Main-Class': 'Backpropagation'
     }
     baseName = project.name + '-all'
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
