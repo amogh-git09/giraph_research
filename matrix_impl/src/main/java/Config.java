@@ -27,7 +27,7 @@ public class Config {
     public static int INPUT_LAYER_NEURON_COUNT = 785;     //including bias
     public static final int OUTPUT_LAYER_NEURON_COUNT = 10;
     public static final int[] ARCHITECTURE = {
-            INPUT_LAYER_NEURON_COUNT, 101, OUTPUT_LAYER_NEURON_COUNT};
+            INPUT_LAYER_NEURON_COUNT, 300, OUTPUT_LAYER_NEURON_COUNT};
 
 
     public static final boolean TESTING = false;

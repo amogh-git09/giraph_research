@@ -22,9 +22,9 @@ import java.util.List;
 public class NeuralNetworkVectorVertexInputFormat extends VertexInputFormat<Text, NeuronValue, NullWritable>{
     GiraphTextInputFormat inputFormat = new GiraphTextInputFormat();
     private int layer = 0;  // 0 for input, 1 for output
-    private int dataNum = 0;
     private int classNum = -1;
-    private int count = 0;
+    private static int count = 0;
+    private int dataNum;
 
     @Override
     public VertexReader<Text, NeuronValue, NullWritable> createVertexReader(InputSplit split, TaskAttemptContext context) throws IOException {
@@ -63,7 +63,6 @@ public class NeuralNetworkVectorVertexInputFormat extends VertexInputFormat<Text
 
                 Text line = lineRecordReader.getCurrentValue();
                 Logger.d("Reading data: " + line.toString());
-                dataNum += 1;
 
                 String[] tokens = line.toString().split(",");
                 int len = tokens.length;
@@ -74,18 +73,21 @@ public class NeuralNetworkVectorVertexInputFormat extends VertexInputFormat<Text
                             Config.INPUT_LAYER_NEURON_COUNT, len));
                 }
 
+                dataNum = Integer.parseInt(tokens[0]);
+                double[] data = new double[len - 1];    // input file includes line numbers
+                data[0] = 1d;
+                for(int i=1; i<len-1; i++) {
+                    data[i] = Double.parseDouble(tokens[i]);
+                }
+
                 classNum = Integer.parseInt(tokens[len - 1]);
                 Text id = Config.getVertexId(dataNum, layer);
 
                 if(dataNum == 1) {
                     Logger.i("Loading first datum: " + id.toString());
+                    Logger.i("Data: " + line.toString());
                 }
 
-                double[] data = new double[len];
-                data[0] = 1d;
-                for(int i=1; i<len; i++) {
-                    data[i] = Double.parseDouble(tokens[i-1]);
-                }
                 DenseVectorWritable vec = new DenseVectorWritable(new DenseVector(data));
                 NeuronValue val = new NeuronValue(vec, null);
                 Vertex<Text, NeuronValue, NullWritable> vertex = getConf().createVertex();

@@ -20,7 +20,7 @@ public class NNMasterCompute extends DefaultMasterCompute {
     public static final String DATANUM_ID = "DataAggregator";
     public static final String ITERATION_ID = "IterAggregator";
 
-    int MAX_ITER = 10;
+    int MAX_ITER = 4;
 
     @Override
     public void compute() {
