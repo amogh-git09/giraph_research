@@ -6,6 +6,7 @@ package debug;
 public class Logger {
     public static boolean DEBUG = false;
     public static boolean INFO = true;
+    public static boolean PERF = true;
 
     public static void d(String msg) {
         if(DEBUG) {
@@ -16,5 +17,10 @@ public class Logger {
     public static void i(String msg) {
         if(INFO)
             System.out.println("INFO: " + msg);
+    }
+
+    public static void p(String msg) {
+        if(PERF)
+            System.out.println("PERF: " + msg);
     }
 }

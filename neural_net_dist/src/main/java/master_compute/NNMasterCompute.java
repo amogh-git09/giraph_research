@@ -1,5 +1,7 @@
 package master_compute;
 
+import config.Config;
+import debug.Logger;
 import org.apache.giraph.aggregators.DoubleSumAggregator;
 import org.apache.giraph.aggregators.IntSumAggregator;
 import org.apache.giraph.master.DefaultMasterCompute;
@@ -19,12 +21,40 @@ public class NNMasterCompute extends DefaultMasterCompute {
     public static final String STAGE_AGG_ID = "StageAggregator";
 //    public static final String DATA_SET_INDEX_AGG = "DataSetIndex";
     public static final String COST_AGGREGATOR = "costAggregator";
-    public static final int MAX_ITER = 500;
+
+    boolean startTimeRegistered = false;
+    long startTime;
+    int prevStage = 0;
 
     @Override
     public void compute() {
-        if(getSuperstep() > MAX_ITER)
+        if(getSuperstep() > Config.MAX_ITER) {
+            Logger.i("Halting");
             haltComputation();
+        }
+
+        if(getSuperstep() == 0) {
+            Logger.i("Beginning computation with following network architecture");
+            Config.printConfig();
+        }
+
+        if(!startTimeRegistered) {
+            startTime = System.currentTimeMillis();
+            startTimeRegistered = true;
+            Logger.p(String.format("Registered start time: %d", startTime));
+        }
+
+        IntWritable stage = getAggregatedValue(STAGE_AGG_ID);
+
+        if(Logger.PERF) {
+            if (prevStage != stage.get()) {
+                long currTime = System.currentTimeMillis();
+                Logger.p(String.format("PrevStage: %d, currStage: %d, diff = %.3f secs", prevStage, stage.get(),
+                        (currTime - startTime) / (double) 1000));
+                prevStage = stage.get();
+                startTime = currTime;
+            }
+        }
     }
 
     @Override

@@ -256,7 +256,7 @@ public class BackwardPropagation extends
                 Double update = gradient * Config.LEARNING_RATE;
 
                 Logger.d("Updating back edge " + vertex.getId() + " --> " + e.getTargetVertexId());
-                Logger.d(String.format("Old val: %f, gradient: %f, update: %f, new val: %f\n",
+                Logger.d(String.format("Old val: %f, gradient: %f, update: %f, new val: %f",
                         old, gradient, update, (old - update)));
 
                 // gradient descent

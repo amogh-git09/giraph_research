@@ -6,7 +6,7 @@ package neural_net;
 public class Logger {
     public static boolean DEBUG = false;
     public static boolean INFO = true;
-    public static boolean PERFORMANCE = true;
+    public static boolean PERFORMANCE = false;
 
     public static void d(String msg) {
         if(DEBUG) {

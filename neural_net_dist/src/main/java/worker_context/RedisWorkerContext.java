@@ -20,7 +20,7 @@ public class RedisWorkerContext extends WorkerContext {
 
     @Override
     public void preApplication() throws InstantiationException, IllegalAccessException {
-        jedis = new Jedis(REDIS_SERVER);
+//        jedis = new Jedis(REDIS_SERVER);
         random = new Random();
     }
 

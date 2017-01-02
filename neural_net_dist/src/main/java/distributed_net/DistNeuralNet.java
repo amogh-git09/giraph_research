@@ -26,7 +26,7 @@ import static config.Config.INPUT_LAYER;
 public class DistNeuralNet extends
         BasicComputation<Text, NeuronValue, EdgeValue, Text> {
 
-    private RedisWorkerContext workerContext;
+    RedisWorkerContext workerContext;
 
     public static void main(String[] args) throws Exception {
         System.exit(ToolRunner.run(new GiraphRunner(), args));
@@ -37,7 +37,8 @@ public class DistNeuralNet extends
                         Iterable<Text> messages) throws IOException {
 
         if (workerContext == null) {
-            workerContext = (RedisWorkerContext) getWorkerContext();
+            Logger.i("initializing worker context");
+            workerContext = getWorkerContext();
         }
 
         IntWritable stage = getAggregatedValue(NNMasterCompute.STAGE_AGG_ID);
@@ -213,13 +214,37 @@ public class DistNeuralNet extends
     }
 
     private void generateNetwork() throws IOException {
-        Logger.d("Generating network");
+        Logger.i("Generating network");
         for (int l = Config.INPUT_LAYER; l <= Config.MAX_HIDDEN_LAYER_NUM; l++) {
             int neuronCount = getNeuronCount(l);
             int i = l == Config.INPUT_LAYER ? 1 : 0;
             for (; i <= neuronCount; i++) {
                 Text destVertexID = getNeuronId(l, i);
                 double initActivation = i == 0 ? 1d : workerContext.getRandomActivation();
+
+                if(Config.TESTING) {
+                    switch (l) {
+                        case 1:
+                            switch (i) {
+                                case 1:
+                                    initActivation = 1;
+                                    break;
+                                case 2:
+                                    initActivation = 5;
+                                    break;
+                            }
+                            break;
+
+                        case -1:
+                            switch (i) {
+                                case 0:
+                                    initActivation = 0;
+                                    break;
+                            }
+                            break;
+                    }
+                }
+
                 NeuronValue nVal = new NeuronValue(initActivation, 0d, 0d, 0, getNeuronCount(getNextLayerNum(l)));
                 addVertexRequest(destVertexID, nVal);
                 Logger.d(String.format("Generating vertex: %s with activation %s", destVertexID,
@@ -514,6 +539,8 @@ public class DistNeuralNet extends
             e.getValue().setWeight(oldWeight - update);
             Logger.d(String.format("Updated %s --> %s weight from %s to %s", vertex.getId().toString(),
                     e.getTargetVertexId(), oldWeight, e.getValue().getWeight()));
+            Logger.d(String.format("Old val: %f, gradient: %f, update: %f, new val: %f",
+                    oldWeight, derivative, update, e.getValue().getWeight()));
         }
     }
 
