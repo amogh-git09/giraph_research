@@ -366,13 +366,19 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
     }
 
     public static void printMatrix(Matrix m) {
-        if(Logger.DEBUG) {
+        printMatrix(m, false);
+    }
+
+    public static void printMatrix(Matrix m, boolean forcePrint) {
+        forcePrint = forcePrint || Logger.DEBUG;
+
+        if(forcePrint) {
             for (int i = 0; i < m.numRows(); i++) {
                 StringBuilder str = new StringBuilder();
                 for (int j = 0; j < m.numColumns(); j++) {
                     str.append(m.get(i, j) + "  ");
                 }
-                Logger.d(str.toString());
+                System.out.println(str);
             }
         }
     }

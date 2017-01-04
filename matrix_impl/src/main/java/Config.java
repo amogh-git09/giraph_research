@@ -7,6 +7,7 @@ public class Config {
     public static final String DELIMITER = ":";
     public static final double EPSILON = 0.5;
     public static final double LEARNING_RATE = 0.05;
+    public static int MAX_ITER = 15;
 
     public static int dataSize = 0;
     public static int checker = 0;
@@ -15,7 +16,7 @@ public class Config {
 //    public static int INPUT_LAYER_NEURON_COUNT = 8;     //including bias
 //    public static final int OUTPUT_LAYER_NEURON_COUNT = 29;
 //    public static final int[] ARCHITECTURE = {
-//            INPUT_LAYER_NEURON_COUNT, 8, 8, 8, OUTPUT_LAYER_NEURON_COUNT};
+//            INPUT_LAYER_NEURON_COUNT, 7, OUTPUT_LAYER_NEURON_COUNT};
 
     //iris
 //    public static int INPUT_LAYER_NEURON_COUNT = 5;     //including bias
@@ -27,7 +28,7 @@ public class Config {
     public static int INPUT_LAYER_NEURON_COUNT = 785;     //including bias
     public static final int OUTPUT_LAYER_NEURON_COUNT = 10;
     public static final int[] ARCHITECTURE = {
-            INPUT_LAYER_NEURON_COUNT, 300, OUTPUT_LAYER_NEURON_COUNT};
+            INPUT_LAYER_NEURON_COUNT, 500, OUTPUT_LAYER_NEURON_COUNT};
 
 
     public static final boolean TESTING = false;

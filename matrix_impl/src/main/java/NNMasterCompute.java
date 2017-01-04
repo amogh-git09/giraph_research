@@ -20,8 +20,6 @@ public class NNMasterCompute extends DefaultMasterCompute {
     public static final String DATANUM_ID = "DataAggregator";
     public static final String ITERATION_ID = "IterAggregator";
 
-    int MAX_ITER = 10;
-
     @Override
     public void compute() {
         IntWritable iterations = getAggregatedValue(ITERATION_ID);
@@ -30,10 +28,21 @@ public class NNMasterCompute extends DefaultMasterCompute {
             Logger.i("DataSize = " + Config.dataSize);
         }
 
-        if(iterations.get() > MAX_ITER) {
+        if(iterations.get() > Config.MAX_ITER) {
             Logger.i("Superstep: " + getSuperstep());
             IntWritable dataSize = getAggregatedValue(DATANUM_ID);
             Logger.p("DataSize = " + dataSize.get() + " instances");
+
+            Logger.i("Weights:");
+
+            for(int i=Config.INPUT; i != Config.OUTPUT; i = Backpropagation.getNextLayerNum(i)) {
+                String aggName = getWeightAggregatorName(i);
+                DenseMatrixWritable m = getAggregatedValue(aggName);
+                System.out.println("Weights for layer: " + i);
+                Backpropagation.printMatrix(m.getMatrix(), true);
+                System.out.println("\n");
+            }
+
             haltComputation();
         }
     }

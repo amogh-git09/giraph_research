@@ -83,11 +83,6 @@ public class NeuralNetworkVectorVertexInputFormat extends VertexInputFormat<Text
                 classNum = Integer.parseInt(tokens[len - 1]);
                 Text id = Config.getVertexId(dataNum, layer);
 
-                if(dataNum == 1) {
-                    Logger.i("Loading first datum: " + id.toString());
-                    Logger.i("Data: " + line.toString());
-                }
-
                 DenseVectorWritable vec = new DenseVectorWritable(new DenseVector(data));
                 NeuronValue val = new NeuronValue(vec, null);
                 Vertex<Text, NeuronValue, NullWritable> vertex = getConf().createVertex();
