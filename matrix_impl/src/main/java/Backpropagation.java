@@ -48,7 +48,6 @@ public class Backpropagation extends BasicComputation<Text, NeuronValue,
                         for(int i=1; i<=Config.HIDDEN_LAYER_COUNT; i++) {
                             generateHiddenLayer(dataNum, i);
                         }
-
                         break;
 
                     // OUTPUT LAYER

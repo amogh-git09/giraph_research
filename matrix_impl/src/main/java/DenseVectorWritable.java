@@ -27,7 +27,6 @@ public class DenseVectorWritable implements Writable {
             dataWr[i] = new DoubleWritable(data[i]);
         }
 
-
         ArrayWritable array = new ArrayWritable(DoubleWritable.class, dataWr);
         array.write(dataOutput);
     }

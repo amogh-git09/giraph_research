@@ -8,11 +8,6 @@ public class DenseMatrixWritableSumAggregator extends BasicAggregator<DenseMatri
 
     @Override
     public void aggregate(DenseMatrixWritable value) {
-//        Logger.d("DenseMatrixWritableSumAggregator aggregate");
-//        Logger.d(String.format("Self size = %d, other size = %d", getAggregatedValue().getNumRows(),
-//                value.getNumRows()));
-//        Backpropagation.printMatrix(getAggregatedValue().getMatrix());
-
         int selfSize  = getAggregatedValue().getNumRows();
         int otherSize = value.getNumRows();
 
