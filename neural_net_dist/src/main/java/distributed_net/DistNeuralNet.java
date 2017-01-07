@@ -164,8 +164,10 @@ public class DistNeuralNet extends
                         aggregateNeuronCost(vertex);
 
                         //switch to next stage
-                        if (neuronNum == 1)
+                        if (neuronNum == 1) {
                             aggregate(NNMasterCompute.STAGE_AGG_ID, new IntWritable(1));
+                            aggregate(NNMasterCompute.ITER_AGGREGATOR, new IntWritable(1));
+                        }
                         break;
 
                     default:
@@ -683,7 +685,8 @@ public class DistNeuralNet extends
 
             DoubleWritable costWr = getAggregatedValue(NNMasterCompute.COST_AGGREGATOR);
             Double cost = -costWr.get() / Config.DATA_SIZE;
-            Logger.i(String.format("Cost at SS %d = %s", getSuperstep(), cost.toString()));
+            IntWritable iterations = getAggregatedValue(NNMasterCompute.ITER_AGGREGATOR);
+            Logger.i(String.format("iteration: %d, cost = %s", iterations.get(), cost.toString()));
 
             //flush cost
             aggregate(NNMasterCompute.COST_AGGREGATOR, new DoubleWritable(-costWr.get()));

@@ -19,11 +19,13 @@ public class NNMasterCompute extends DefaultMasterCompute {
     public static final String STAGE_AGG_ID = "StageAggregator";
 //    public static final String DATA_SET_INDEX_AGG = "DataSetIndex";
     public static final String COST_AGGREGATOR = "costAggregator";
-    public static final int MAX_ITER = 500;
+    public static final String ITER_AGGREGATOR = "IterationAggregator";
+    public static final int MAX_ITER = 10;
 
     @Override
     public void compute() {
-        if(getSuperstep() > MAX_ITER)
+        IntWritable iterations = getAggregatedValue(ITER_AGGREGATOR);
+        if(iterations.get() > MAX_ITER)
             haltComputation();
     }
 
@@ -32,6 +34,7 @@ public class NNMasterCompute extends DefaultMasterCompute {
         registerPersistentAggregator(STAGE_AGG_ID, IntSumAggregator.class);
 //        registerPersistentAggregator(DATA_SET_INDEX_AGG, IntSumAggregator.class);
         registerPersistentAggregator(COST_AGGREGATOR, DoubleSumAggregator.class);
+        registerPersistentAggregator(ITER_AGGREGATOR, IntSumAggregator.class);
 //        setAggregatedValue(DATA_SET_INDEX_AGG, new IntWritable(1));
     }
 

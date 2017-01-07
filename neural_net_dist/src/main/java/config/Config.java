@@ -4,7 +4,7 @@ package config;
  * Created by amogh09 on 16/12/15.
  */
 public class Config {
-    public static final int DATA_SIZE = 150;
+    public static final int DATA_SIZE = 1;
     public static final double LEARNING_RATE = 0.05;
 
     public static final int INPUT_LAYER_NEURON_COUNT = 784;
