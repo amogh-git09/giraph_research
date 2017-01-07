@@ -31,7 +31,7 @@ public class Config {
     public static void printConfig() {
         String msg = "";
         for(int i = 0; i < LAYER_TO_NEURON.length; i++) {
-            msg = msg + LAYER_TO_NEURON[i] + " : ";
+            msg = msg + LAYER_TO_NEURON[i] +  " : ";
         }
 
         Logger.i(msg);
