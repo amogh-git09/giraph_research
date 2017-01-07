@@ -2,6 +2,7 @@ package master_compute;
 
 import config.Config;
 import debug.Logger;
+import debug.Timer;
 import org.apache.giraph.aggregators.DoubleSumAggregator;
 import org.apache.giraph.aggregators.IntSumAggregator;
 import org.apache.giraph.master.DefaultMasterCompute;
@@ -21,21 +22,25 @@ public class NNMasterCompute extends DefaultMasterCompute {
     public static final String STAGE_AGG_ID = "StageAggregator";
 //    public static final String DATA_SET_INDEX_AGG = "DataSetIndex";
     public static final String COST_AGGREGATOR = "costAggregator";
-
+    public static final String ITER_AGGREGATOR = "IterationAggregator";
     boolean startTimeRegistered = false;
     long startTime;
     int prevStage = 0;
+    Timer timer = new Timer();
 
     @Override
     public void compute() {
-        if(getSuperstep() > Config.MAX_ITER) {
-            Logger.i("Halting");
-            haltComputation();
-        }
+        IntWritable iterations = getAggregatedValue(ITER_AGGREGATOR);
 
         if(getSuperstep() == 0) {
             Logger.i("Beginning computation with following network architecture");
             Config.printConfig();
+        }
+
+        if(iterations.get() > Config.MAX_ITER) {
+            Logger.i("Halting");
+            timer.report();
+            haltComputation();
         }
 
         if(!startTimeRegistered) {
@@ -45,6 +50,10 @@ public class NNMasterCompute extends DefaultMasterCompute {
         }
 
         IntWritable stage = getAggregatedValue(STAGE_AGG_ID);
+
+        if (stage.get() == FORWARD_PROPAGATION_STAGE) {
+            timer.start();
+        }
 
         if(Logger.PERF) {
             if (prevStage != stage.get()) {
@@ -62,6 +71,7 @@ public class NNMasterCompute extends DefaultMasterCompute {
         registerPersistentAggregator(STAGE_AGG_ID, IntSumAggregator.class);
 //        registerPersistentAggregator(DATA_SET_INDEX_AGG, IntSumAggregator.class);
         registerPersistentAggregator(COST_AGGREGATOR, DoubleSumAggregator.class);
+        registerPersistentAggregator(ITER_AGGREGATOR, IntSumAggregator.class);
 //        setAggregatedValue(DATA_SET_INDEX_AGG, new IntWritable(1));
     }
 

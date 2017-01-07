@@ -9,10 +9,10 @@ public class Config {
     public static final int DATA_SIZE = 1;
     public static final double LEARNING_RATE = 0.05;
 
-    public static final int INPUT_LAYER_NEURON_COUNT = 10000;
+    public static final int INPUT_LAYER_NEURON_COUNT = 5000;
     public static final int OUTPUT_LAYER_NEURON_COUNT = 10;
     public static final int[] LAYER_TO_NEURON = {
-            INPUT_LAYER_NEURON_COUNT, 500, OUTPUT_LAYER_NEURON_COUNT};
+            INPUT_LAYER_NEURON_COUNT, 3000, OUTPUT_LAYER_NEURON_COUNT};
 
 //    public static final int INPUT_LAYER_NEURON_COUNT = 2;
 //    public static final int OUTPUT_LAYER_NEURON_COUNT = 1;
@@ -26,7 +26,7 @@ public class Config {
 
     public static final boolean TESTING = true;
     public static final String DELIMITER = ":";
-    public static final int MAX_ITER = 30;
+    public static final int MAX_ITER = 2;
 
     public static void printConfig() {
         String msg = "";
